@@ -8,7 +8,12 @@ import {
   updateUserAuth,
 } from '@/services/account';
 import { assignUserTag, selectUserTagsList } from '@/services/checkin';
-import { updateBlock, getIdentityVerificationDetail, cancelIdentityVerification } from '@/services/user';
+import {
+  updateBlock,
+  getIdentityVerificationDetail,
+  cancelIdentityVerification,
+  updateUserInfo,
+} from '@/services/user';
 import { formatUTCTimeToBeijing, getResourceUrl } from '@/utils/common';
 import type { ActionType, FormInstance, ProColumns } from '@ant-design/pro-components';
 import { ModalForm, PageContainer, ProFormCheckbox, ProTable } from '@ant-design/pro-components';
@@ -67,6 +72,12 @@ const UserList = () => {
   const [identityDetailVisible, setIdentityDetailVisible] = useState(false);
   const [currentIdentityDetail, setCurrentIdentityDetail] =
     useState<API.UserManage.IdentityVerification | null>(null);
+  const [nicknameModal, setNicknameModal] = useState<{
+    open: boolean;
+    userId?: string;
+    nickname?: string;
+  }>({ open: false });
+  const [nicknameForm] = Form.useForm<{ nickname: string }>();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [selectedRowsMap, setSelectedRowsMap] = useState<Map<string, any>>(() => new Map());
 
@@ -168,6 +179,30 @@ const UserList = () => {
       message.error('取消实名认证失败');
     }
   };
+
+  const openNicknameModal = useCallback((record: any) => {
+    setNicknameModal({
+      open: true,
+      userId: record.user_id,
+      nickname: record.user?.nickname || '',
+    });
+    nicknameForm.setFieldsValue({
+      nickname: record.user?.nickname || '',
+    });
+  }, [nicknameForm]);
+
+  const submitNicknameUpdate = useCallback(async () => {
+    const values = await nicknameForm.validateFields();
+    if (!nicknameModal.userId) return;
+    await updateUserInfo({
+      userID: nicknameModal.userId,
+      nickname: values.nickname,
+    });
+    message.success('修改成功');
+    setNicknameModal({ open: false });
+    nicknameForm.resetFields();
+    actionRef.current?.reload();
+  }, [nicknameForm, nicknameModal.userId]);
 
   const ModifyModel = (modalProps) => {
     const { initData, tags } = modalProps;
@@ -563,6 +598,9 @@ const UserList = () => {
                 调整角色
               </Button>
             )}
+            <Button type="link" onClick={() => openNicknameModal(record)}>
+              修改昵称
+            </Button>
             <Popconfirm
               title="确定要封禁此用户吗?"
               onConfirm={async () => {
@@ -587,7 +625,7 @@ const UserList = () => {
         ),
       },
     ],
-    [tagList, openRoleAdjustModal],
+    [tagList, openRoleAdjustModal, openNicknameModal],
   );
   const handleExportNicknameAccountExcel = async () => {
     if (exportExcelBusyRef.current) return;
@@ -730,6 +768,29 @@ const UserList = () => {
         reload={() => actionRef.current?.reload()}
         setDrawerOptions={setDrawerOptions}
       />
+      <Modal
+        title="修改昵称"
+        open={nicknameModal.open}
+        onOk={submitNicknameUpdate}
+        onCancel={() => {
+          setNicknameModal({ open: false });
+          nicknameForm.resetFields();
+        }}
+        destroyOnClose
+      >
+        <Form form={nicknameForm} layout="vertical">
+          <Form.Item
+            label="用户昵称"
+            name="nickname"
+            rules={[
+              { required: true, message: '请输入用户昵称' },
+              { max: 50, message: '昵称长度不能超过 50' },
+            ]}
+          >
+            <Input allowClear placeholder="请输入新的用户昵称" />
+          </Form.Item>
+        </Form>
+      </Modal>
       <ErrorDataModal
         visible={errorDataModalProps.visible}
         closeModal={() => setErrorDataModalProps({ visible: false, errorData: [] })}

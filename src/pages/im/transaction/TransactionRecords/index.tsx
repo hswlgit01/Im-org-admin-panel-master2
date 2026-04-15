@@ -48,6 +48,22 @@ const UserList = () => {
         hideInSearch: true,
       },
       {
+        title: '发放人昵称',
+        key: 'sender_nickname',
+        dataIndex: ['sender', 'nickname'],
+        align: 'center',
+        hideInSearch: true,
+        render: (_, record) => record.sender?.nickname || '-',
+      },
+      {
+        title: '发放人账号',
+        key: 'sender_account',
+        dataIndex: ['sender', 'account'],
+        align: 'center',
+        hideInSearch: true,
+        render: (_, record) => record.sender?.account || '-',
+      },
+      {
         title: '交易类型',
         key: 'transaction_type',
         dataIndex: 'transaction_type',

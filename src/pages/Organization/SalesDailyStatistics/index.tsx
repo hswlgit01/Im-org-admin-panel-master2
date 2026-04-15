@@ -15,6 +15,7 @@ type SalesDailyStatItem = {
   unverified_count: number;
   checkin_count: number;
   all_checkin_count: number;
+  team_checkin_count: number;
 };
 
 const SalesDailyStatistics = () => {
@@ -115,6 +116,13 @@ const SalesDailyStatistics = () => {
         align: 'center',
         hideInSearch: true,
       },
+      {
+        title: '整个团队签到人数',
+        key: 'team_checkin_count',
+        dataIndex: 'team_checkin_count',
+        align: 'center',
+        hideInSearch: true,
+      },
     ],
     [intl],
   );
@@ -204,4 +212,3 @@ const SalesDailyStatistics = () => {
 };
 
 export default SalesDailyStatistics;
-

@@ -7,6 +7,7 @@ import { useMemo, useRef, useState } from 'react';
 
 interface DefaultGroupItem {
   group_id: string;
+  group_name?: string;
   org_id: string;
   created_at: number;
 }
@@ -66,6 +67,14 @@ const DefaultGroup = () => {
         dataIndex: 'keyword',
         hideInTable: true,
         align: 'center',
+      },
+      {
+        title: intl.formatMessage({ id: 'group.groupName' }),
+        dataIndex: 'group_name',
+        key: 'group_name',
+        align: 'center',
+        hideInSearch: true,
+        render: (_, record) => record.group_name || '-',
       },
       {
         title: intl.formatMessage({ id: 'group.groupID' }),

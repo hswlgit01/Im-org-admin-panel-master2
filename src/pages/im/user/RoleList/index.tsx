@@ -55,6 +55,17 @@ const permission_code_list = [
         value: 'add_friend',
     },
     {
+        label: (
+            <span>
+                非好友可私聊
+                <Tooltip title="勾选后，该角色成员无需先加好友即可发起单聊">
+                    <QuestionCircleOutlined style={{ marginLeft: 4 }} />
+                </Tooltip>
+            </span>
+        ),
+        value: 'free_private_chat',
+    },
+    {
         label: <div>允许发送红包</div>,
         value: 'send_red_packet',
     },

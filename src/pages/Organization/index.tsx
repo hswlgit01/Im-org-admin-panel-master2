@@ -46,6 +46,7 @@ import SelectUserModal, { SelectedListItem, SelectModalOptions } from '@/compone
 import { useSetState } from 'ahooks';
 import { useIntl } from '@umijs/max';
 import { formatUTCTimeToBeijing, getResourceUrl } from '@/utils/common';
+import ResetModal from '@/pages/chat/user/UserList/ResetModal';
 
 const { Search } = Input;
 
@@ -75,6 +76,7 @@ const OrganizationDetail: React.FC = () => {
     verified: false,
     type: '',
     totalUser: 0,
+    verifiedUserTotal: 0,
     totalGroup: 0,
     balance: 0,
     contact: '',
@@ -102,6 +104,7 @@ const OrganizationDetail: React.FC = () => {
       verified: data.status === 'pass',
       type: data.type === 'enterprise' ? intl.formatMessage({ id: 'enterpriseOrg' }) : data.type,
       totalUser: data.user_total || 0, // 成员总数
+      verifiedUserTotal: data.verified_user_total || 0, // 已实名成员总数
       totalGroup: data.group_total || 0, // 群组数量
       balance: 0,
       contact: data.contacts,
@@ -156,6 +159,7 @@ const OrganizationDetail: React.FC = () => {
     list: []
   })
   const [loading, setLoading] = useState(false);
+  const [resetUserID, setResetUserID] = useState<string | null>(null);
 
   // 编辑信息相关状态
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
@@ -327,28 +331,30 @@ const OrganizationDetail: React.FC = () => {
       key: 'action',
       render: (_: any, record: any) => (
         <div className={styles.actionBtns}>
-          {
-            record.role === 'GroupManager' || record.role === 'TermManager' ?
-              <Button
-                type="link"
-                danger
-                onClick={() => removeGroupManager(record.user_id)}
-              >
-                {intl.formatMessage({ id: 'remove' })}
-              </Button> : record.status === 'Enable' ? (
-                <Button
-                  type="link"
-                  danger
-                  onClick={() => handleMemberStatusChange(record.user_id, record.status)}
-                >
-                  {intl.formatMessage({ id: 'disable' })}
-                </Button>
-              ) : (
-                <Button type="link" onClick={() => handleMemberStatusChange(record.user_id, record.status)}>
-                  {intl.formatMessage({ id: 'enable' })}
-                </Button>
-              )
-          }
+          <Button type="link" onClick={() => setResetUserID(record.user_id)}>
+            {intl.formatMessage({ id: 'user.resetPassword' })}
+          </Button>
+          {record.role === 'GroupManager' || record.role === 'TermManager' ? (
+            <Button
+              type="link"
+              danger
+              onClick={() => removeGroupManager(record.user_id)}
+            >
+              {intl.formatMessage({ id: 'remove' })}
+            </Button>
+          ) : record.status === 'Enable' ? (
+            <Button
+              type="link"
+              danger
+              onClick={() => handleMemberStatusChange(record.user_id, record.status)}
+            >
+              {intl.formatMessage({ id: 'disable' })}
+            </Button>
+          ) : (
+            <Button type="link" onClick={() => handleMemberStatusChange(record.user_id, record.status)}>
+              {intl.formatMessage({ id: 'enable' })}
+            </Button>
+          )}
         </div>
       ),
     },
@@ -414,28 +420,30 @@ const OrganizationDetail: React.FC = () => {
       key: 'action',
       render: (_: any, record: any) => (
         <div className={styles.actionBtns}>
-          {
-            record.role === 'GroupManager' || record.role === 'TermManager' ?
-              <Button
-                type="link"
-                danger
-                onClick={() => removeGroupManager(record.user_id)}
-              >
-                {intl.formatMessage({ id: 'remove' })}
-              </Button> : record.status === 'Enable' ? (
-                <Button
-                  type="link"
-                  danger
-                  onClick={() => handleMemberStatusChange(record.user_id, record.status)}
-                >
-                  {intl.formatMessage({ id: 'disable' })}
-                </Button>
-              ) : (
-                <Button type="link" onClick={() => handleMemberStatusChange(record.user_id, record.status)}>
-                  {intl.formatMessage({ id: 'enable' })}
-                </Button>
-              )
-          }
+          <Button type="link" onClick={() => setResetUserID(record.user_id)}>
+            {intl.formatMessage({ id: 'user.resetPassword' })}
+          </Button>
+          {record.role === 'GroupManager' || record.role === 'TermManager' ? (
+            <Button
+              type="link"
+              danger
+              onClick={() => removeGroupManager(record.user_id)}
+            >
+              {intl.formatMessage({ id: 'remove' })}
+            </Button>
+          ) : record.status === 'Enable' ? (
+            <Button
+              type="link"
+              danger
+              onClick={() => handleMemberStatusChange(record.user_id, record.status)}
+            >
+              {intl.formatMessage({ id: 'disable' })}
+            </Button>
+          ) : (
+            <Button type="link" onClick={() => handleMemberStatusChange(record.user_id, record.status)}>
+              {intl.formatMessage({ id: 'enable' })}
+            </Button>
+          )}
         </div>
       ),
     },
@@ -596,6 +604,7 @@ const OrganizationDetail: React.FC = () => {
         breadcrumb: <Breadcrumb items={[{ title: '首页' }, { title: '组织管理' }]} />,
       }}
     >
+      <ResetModal userID={resetUserID} setUserID={setResetUserID} />
       <Spin spinning={loading}>
         <Card className={styles.orgInfoCard}>
           <div className={styles.orgHeader}>
@@ -635,6 +644,7 @@ const OrganizationDetail: React.FC = () => {
                   <div className={styles.statInfo}>
                     <div className={styles.statLabel}>{intl.formatMessage({ id: 'totalMembers' })}</div>
                     <div className={styles.statValue}>{orgData.totalUser}</div>
+                    <div className={styles.statSubValue}>已实名 {orgData.verifiedUserTotal}</div>
                   </div>
                 </div>
               </Col>
