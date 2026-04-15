@@ -1,0 +1,208 @@
+// @import '~antd/es/style/themes/default.less';
+
+// 组织信息卡片样式
+.orgInfoCard {
+  :global {
+    .ant-card-body {
+      padding: 24px;
+    }
+  }
+}
+
+.orgHeader {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.orgLogo {
+  margin-right: 24px;
+  
+  :global {
+    .ant-avatar {
+      background-color: #1890ff;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+}
+
+.orgBasicInfo {
+  flex: 1;
+}
+
+.orgName {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  
+  h2 {
+    margin: 0;
+    margin-right: 16px;
+    font-size: 20px;
+    font-weight: 500;
+  }
+}
+
+.orgTags {
+  display: flex;
+  gap: 8px;
+}
+
+.orgCreateTime {
+  color: @text-color-secondary;
+  font-size: 14px;
+}
+
+.orgActions {
+  display: flex;
+  gap: 8px;
+}
+
+// 组织统计数据样式
+.orgStats {
+  margin-bottom: 24px;
+  
+  .statItem {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+  }
+  
+  .statIcon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+    position: relative;
+  }
+  
+  .iconScore,
+  .iconMembers,
+  .iconBalance {
+    &::before {
+      font-family: 'anticon';
+      font-size: 24px;
+    }
+  }
+  
+  .iconScore::before {
+    content: '\e7ae'; // 人员图标
+    color: #1890ff;
+  }
+  
+  .iconMembers::before {
+    content: '\e7d8'; // 群组图标
+    color: #722ed1;
+  }
+  
+  .iconBalance::before {
+    content: '\e73d'; // 金额图标
+    color: #faad14;
+  }
+  
+  .statInfo {
+    flex: 1;
+  }
+  
+  .statLabel {
+    color: @text-color-secondary;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  
+  .statValue {
+    font-size: 20px;
+    font-weight: 500;
+  }
+}
+
+// 组织详情样式
+.orgDetailItems {
+  .detailRow {
+    display: flex;
+    margin-bottom: 24px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  .detailItem {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .detailLabel {
+    color: @text-color-secondary;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  
+  .detailValue {
+    font-size: 14px;
+  }
+}
+
+// 组织成员卡片样式
+.membersCard {
+  :global {
+    .ant-card-head {
+      border-bottom: none;
+      padding: 0 24px;
+    }
+    
+    .ant-card-body {
+      padding: 0 24px 24px;
+    }
+  }
+}
+
+.memberSearch {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.filterStatus {
+  display: flex;
+  align-items: center;
+  
+  span {
+    margin-right: 8px;
+    color: @text-color-secondary;
+  }
+}
+
+.memberActions {
+  display: flex;
+  gap: 8px;
+}
+
+.memberInfo {
+  display: flex;
+  align-items: center;
+  
+  .memberAvatar {
+    margin-right: 12px;
+    background-color: #1890ff;
+  }
+}
+
+.actionBtns {
+  display: flex;
+  
+  button {
+    padding-left: 0;
+    padding-right: 8px;
+  }
+}
