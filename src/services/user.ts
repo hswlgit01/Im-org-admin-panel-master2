@@ -83,7 +83,7 @@ export async function selectRolePermissions(params: { role: string }) {
   });
 }
 export async function updateUserInfo(params: API.UserManage.UpdateUserInfoParams) {
-  return request('user/update', {
+  return request('/third/user/update_info', {
     method: 'POST',
     data: {
       ...params,
@@ -114,7 +114,7 @@ export async function registerUser(params: API.UserManage.RegisterUserParams) {
 }
 
 export async function resetUserPassword(params: API.UserManage.ResetUserPasswordParams) {
-  return request('/user/password/reset', {
+  return request('/third_admin/organization_user/reset_password', {
     method: 'POST',
     data: {
       ...params,
@@ -122,7 +122,7 @@ export async function resetUserPassword(params: API.UserManage.ResetUserPassword
     headers: {
       isAccount: true,
     },
-    baseURL: ACCOUNT_URL,
+    baseURL: CHAT_URL,
   });
 }
 
