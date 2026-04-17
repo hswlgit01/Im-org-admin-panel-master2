@@ -12,7 +12,7 @@ import {
   updateBlock,
   getIdentityVerificationDetail,
   cancelIdentityVerification,
-  updateUserInfo,
+  updateOrgUserNickname,
 } from '@/services/user';
 import { formatUTCTimeToBeijing, getResourceUrl } from '@/utils/common';
 import type { ActionType, FormInstance, ProColumns } from '@ant-design/pro-components';
@@ -194,7 +194,7 @@ const UserList = () => {
   const submitNicknameUpdate = useCallback(async () => {
     const values = await nicknameForm.validateFields();
     if (!nicknameModal.userId) return;
-    await updateUserInfo({
+    await updateOrgUserNickname({
       userID: nicknameModal.userId,
       nickname: values.nickname,
     });

@@ -95,6 +95,19 @@ export async function updateUserInfo(params: API.UserManage.UpdateUserInfoParams
   });
 }
 
+export async function updateOrgUserNickname(params: { userID: string; nickname: string }) {
+  return request('/third_admin/organization_user/update_nickname', {
+    method: 'POST',
+    data: {
+      ...params,
+    },
+    headers: {
+      isAccount: true,
+    },
+    baseURL: CHAT_URL,
+  });
+}
+
 export async function registerUser(params: API.UserManage.RegisterUserParams) {
   return request('/user/import/json', {
     method: 'POST',
