@@ -1,5 +1,5 @@
 import { request } from '@umijs/max';
-import { resetUserPassword, updateUserInfo } from './user';
+import { resetUserPassword, updateOrgUserNickname, updateUserInfo } from './user';
 
 jest.mock('@umijs/max', () => ({
   request: jest.fn(),
@@ -35,10 +35,42 @@ describe('user services', () => {
     });
   });
 
-  it('updates nickname through the registered third user update route', async () => {
+  it('updates user info through the existing admin user update route', async () => {
     await updateUserInfo({ userID: 'user-1', nickname: 'new-name' });
 
-    expect(mockedRequest).toHaveBeenCalledWith('/third/user/update_info', {
+    expect(mockedRequest).toHaveBeenCalledWith('user/update', {
+      method: 'POST',
+      data: {
+        userID: 'user-1',
+        nickname: 'new-name',
+      },
+      headers: {
+        isAccount: true,
+      },
+      baseURL: 'CHAT_URL',
+    });
+  });
+
+  it('updates organization user nickname through the organization-admin endpoint', async () => {
+    await updateOrgUserNickname({ userID: 'user-1', nickname: 'new-name' });
+
+    expect(mockedRequest).toHaveBeenCalledWith('/third_admin/organization_user/update_nickname', {
+      method: 'POST',
+      data: {
+        userID: 'user-1',
+        nickname: 'new-name',
+      },
+      headers: {
+        isAccount: true,
+      },
+      baseURL: 'CHAT_URL',
+    });
+  });
+
+  it('trims organization user nickname before sending it to the organization-admin endpoint', async () => {
+    await updateOrgUserNickname({ userID: 'user-1', nickname: '  new-name  ' });
+
+    expect(mockedRequest).toHaveBeenCalledWith('/third_admin/organization_user/update_nickname', {
       method: 'POST',
       data: {
         userID: 'user-1',

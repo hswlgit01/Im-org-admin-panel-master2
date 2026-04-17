@@ -83,7 +83,7 @@ export async function selectRolePermissions(params: { role: string }) {
   });
 }
 export async function updateUserInfo(params: API.UserManage.UpdateUserInfoParams) {
-  return request('/third/user/update_info', {
+  return request('user/update', {
     method: 'POST',
     data: {
       ...params,
@@ -100,6 +100,7 @@ export async function updateOrgUserNickname(params: { userID: string; nickname: 
     method: 'POST',
     data: {
       ...params,
+      nickname: params.nickname.trim(),
     },
     headers: {
       isAccount: true,

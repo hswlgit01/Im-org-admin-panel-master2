@@ -78,6 +78,7 @@ const UserList = () => {
     nickname?: string;
   }>({ open: false });
   const [nicknameForm] = Form.useForm<{ nickname: string }>();
+  const [nicknameUpdateLoading, setNicknameUpdateLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [selectedRowsMap, setSelectedRowsMap] = useState<Map<string, any>>(() => new Map());
 
@@ -194,14 +195,19 @@ const UserList = () => {
   const submitNicknameUpdate = useCallback(async () => {
     const values = await nicknameForm.validateFields();
     if (!nicknameModal.userId) return;
-    await updateOrgUserNickname({
-      userID: nicknameModal.userId,
-      nickname: values.nickname,
-    });
-    message.success('修改成功');
-    setNicknameModal({ open: false });
-    nicknameForm.resetFields();
-    actionRef.current?.reload();
+    setNicknameUpdateLoading(true);
+    try {
+      await updateOrgUserNickname({
+        userID: nicknameModal.userId,
+        nickname: values.nickname,
+      });
+      message.success('修改成功');
+      setNicknameModal({ open: false });
+      nicknameForm.resetFields();
+      actionRef.current?.reload();
+    } finally {
+      setNicknameUpdateLoading(false);
+    }
   }, [nicknameForm, nicknameModal.userId]);
 
   const ModifyModel = (modalProps) => {
@@ -772,6 +778,7 @@ const UserList = () => {
         title="修改昵称"
         open={nicknameModal.open}
         onOk={submitNicknameUpdate}
+        confirmLoading={nicknameUpdateLoading}
         onCancel={() => {
           setNicknameModal({ open: false });
           nicknameForm.resetFields();
