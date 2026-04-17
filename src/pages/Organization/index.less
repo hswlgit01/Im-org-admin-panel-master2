@@ -64,10 +64,22 @@
 // 组织统计数据样式
 .orgStats {
   margin-bottom: 24px;
+
+  :global {
+    .ant-row {
+      align-items: stretch;
+    }
+
+    .ant-col {
+      display: flex;
+    }
+  }
   
   .statItem {
     display: flex;
     align-items: center;
+    width: 100%;
+    min-height: 112px;
     padding: 16px;
     background-color: #f5f5f5;
     border-radius: 4px;
