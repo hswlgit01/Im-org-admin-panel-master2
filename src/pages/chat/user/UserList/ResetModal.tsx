@@ -1,5 +1,5 @@
 import { resetUserPassword } from '@/services/user';
-import { useIntl } from '@umijs/max';
+import { history, useIntl } from '@umijs/max';
 import { Input, InputRef, Modal, message } from 'antd';
 import md5 from 'md5';
 import { FC, useRef, useState } from 'react';
@@ -28,6 +28,11 @@ const ResetModal: FC<ResetModalProps> = ({ userID, setUserID }) => {
       });
       message.success(intl.formatMessage({ id: 'api.success' }));
       setUserID(null);
+      if (userID === localStorage.getItem('IMAdminUserID')) {
+        localStorage.removeItem('IMAccountToken');
+        localStorage.removeItem('IMAdminToken');
+        history.push('/login');
+      }
     } catch (error) {
       console.log(error);
     }
