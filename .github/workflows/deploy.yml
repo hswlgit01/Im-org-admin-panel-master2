@@ -17,17 +17,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22.13.1'
           cache: 'pnpm'
 
+      - name: Install pnpm
+        run: npm install -g pnpm
+
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install
+             pnpm add xlsx
 
       - name: Build project
         run: pnpm run build
@@ -58,9 +59,5 @@ jobs:
             rm -f /root/deploy/free-im-admin.tar.gz
             docker stop free-im-admin 2>/dev/null || true
             docker rm free-im-admin 2>/dev/null || true
-            docker run -d \
-              --name free-im-admin \
-              --restart unless-stopped \
-              -p 11002:80 \
-              free-im-admin:latest
+            docker run -d --name free-im-admin --restart unless-stopped -p 11002:80 free-im-admin:latest
             docker ps | grep free-im-admin
