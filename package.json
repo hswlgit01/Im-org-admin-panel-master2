@@ -78,7 +78,8 @@
     "react-virtuoso": "^4.7.0",
     "spark-md5": "^3.0.2",
     "uuid": "^9.0.1",
-    "xgplayer": "3.0.0-alpha.118"
+    "xgplayer": "3.0.0-alpha.118",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@ant-design/pro-cli": "^3.3.0",
