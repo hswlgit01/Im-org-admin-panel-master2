@@ -1,7 +1,5 @@
 # ============================================
 # Im-org-admin-panel CI/CD 流水线配置
-# 功能：代码推送后自动构建前端镜像并部署到服务器
-# 前端服务将通过 11002 端口访问
 # ============================================
 
 name: Build & Deploy Admin Panel
@@ -16,48 +14,39 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # ----- 1. 拉取代码 -----
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ----- 2. 安装 pnpm -----
       - name: Install pnpm
         run: npm install -g pnpm
 
-      # ----- 3. 设置 Node.js -----
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22.13.1'
           cache: 'pnpm'
 
-      # ----- 4. 安装依赖（使用 pnpm）-----
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
-      # ----- 5. 构建项目 -----
       - name: Build project
         run: pnpm run build
 
-      # ----- 6. 构建 Docker 镜像 -----
       - name: Build Docker image
-        run: docker build -t Free-IM-Admin:latest .
+        run: docker build -t free-im-admin:latest .
 
-      # ----- 7. 压缩镜像 -----
       - name: Save image to file
-        run: docker save Free-IM-Admin:latest | gzip > Free-IM-Admin.tar.gz
+        run: docker save free-im-admin:latest | gzip > free-im-admin.tar.gz
 
-      # ----- 8. 上传到服务器 -----
       - name: Copy to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
-          source: "Free-IM-Admin.tar.gz"
+          source: "free-im-admin.tar.gz"
           target: "/root/deploy/"
 
-      # ----- 9. 服务器部署 -----
       - name: Deploy on server
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -65,13 +54,13 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-            docker load < /root/deploy/Free-IM-Admin.tar.gz
-            rm -f /root/deploy/Free-IM-Admin.tar.gz
-            docker stop Free-IM-Admin 2>/dev/null || true
-            docker rm Free-IM-Admin 2>/dev/null || true
+            docker load < /root/deploy/free-im-admin.tar.gz
+            rm -f /root/deploy/free-im-admin.tar.gz
+            docker stop free-im-admin 2>/dev/null || true
+            docker rm free-im-admin 2>/dev/null || true
             docker run -d \
-              --name Free-IM-Admin \
+              --name free-im-admin \
               --restart unless-stopped \
               -p 11002:80 \
-              Free-IM-Admin:latest
-            docker ps | grep Free-IM-Admin
+              free-im-admin:latest
+            docker ps | grep free-im-admin
