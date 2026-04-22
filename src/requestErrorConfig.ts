@@ -1,9 +1,10 @@
-﻿import type { RequestOptions } from '@@/plugin-request/request';
+import { CHAT_URL } from '@/config';
+import { getErrCodeMessage } from '@/constants/errcode';
+import type { RequestOptions } from '@@/plugin-request/request';
 import type { RequestConfig } from '@umijs/max';
 import { history } from '@umijs/max';
 import { message } from 'antd';
 import { v4 } from 'uuid';
-import { getErrCodeMessage } from '@/constants/errcode';
 
 interface ResponseStructure {
   data: any;
@@ -11,14 +12,19 @@ interface ResponseStructure {
   errCode?: number;
 }
 
-/**
- * @name 错误处理
- * pro 自带的错误处理， 可以在这里做自己的改动
- * @doc https://umijs.org/docs/max/request#配置
- */
+const clearAuthStorage = () => {
+  localStorage.removeItem('IMAccountToken');
+  localStorage.removeItem('IMAdminToken');
+  localStorage.removeItem('IMAdminUserID');
+  localStorage.removeItem('IMUserID');
+  localStorage.removeItem('OrganizationID');
+  localStorage.removeItem('walletExist');
+  localStorage.removeItem('rsaPrivateKey');
+  localStorage.removeItem('AES_KEY');
+};
+
 export const errorConfig: RequestConfig = {
   errorConfig: {
-    // 错误抛出
     errorThrower: (res) => {
       const { data, errCode, errDlt } = res as unknown as ResponseStructure;
       if (data?.errCode !== 0) {
@@ -27,72 +33,89 @@ export const errorConfig: RequestConfig = {
         throw error;
       }
     },
-    // 错误接收及处理
     errorHandler: (error: any, opts: any) => {
       if (opts?.skipErrorHandler) throw error;
       return console.log(error);
     },
   },
 
-  // 请求拦截器
   requestInterceptors: [
-    (config: RequestOptions) => {
-      const authHeader = {
+    (url: string, config: RequestOptions) => {
+      let requestUrl = url;
+      const baseURL = config.baseURL;
+
+      if (baseURL && requestUrl.startsWith('/')) {
+        requestUrl = `${baseURL}${requestUrl}`;
+      } else if (requestUrl.startsWith('/third_admin') || requestUrl.startsWith('/third')) {
+        requestUrl = `${CHAT_URL}${requestUrl}`;
+      }
+
+      const organizationId = localStorage.getItem('OrganizationID');
+      const isValidOrganizationId = !!organizationId && /^[a-f\d]{24}$/i.test(organizationId);
+      const authHeader: any = {
         ...config.headers,
-        orgId: localStorage.getItem('OrganizationID'),
         token:
           localStorage.getItem(config.headers?.isAccount ? 'IMAccountToken' : 'IMAdminToken') ?? '',
         operationID: v4(),
       };
+
+      if (isValidOrganizationId) {
+        // 确保使用正确的请求头名称（全小写）
+        authHeader.orgid = organizationId;
+        console.log('[Request Interceptor - Setting Headers]', {
+          url: requestUrl,
+          orgid: organizationId,
+          allHeaders: authHeader,
+        });
+      } else {
+        console.warn('[Request Interceptor - WARNING] Invalid or missing OrganizationID', {
+          url: requestUrl,
+          organizationId,
+          isValid: isValidOrganizationId,
+        });
+      }
+
       config.headers = authHeader;
-      return { ...config };
+      return { url: requestUrl, options: { ...config } };
     },
   ],
 
-  // 响应拦截器
   responseInterceptors: [
     (response) => {
-      const { data, headers, config } = response as unknown as ResponseStructure & { config: any };
+      const { data, headers } = response as any;
 
-      // 添加详细日志
-
-      if (headers['content-type'] === "application/octet-stream") {
+      if (headers?.['content-type']?.startsWith('application/octet-stream')) {
         return response;
       }
 
       const tokenErrCode = [1501, 1502, 1503, 1504, 1505, 1506, 1507, 20101];
 
-
       if (data?.errCode === 20101) {
-        message.error('您的账户已在其他设备登录，请重新登录');
+        message.error('Please log in again');
       }
 
-      // 检查是否存在token相关错误
       if (data?.errDlt && (data.errDlt.includes('token') || data.errDlt.includes('Token'))) {
-        localStorage.removeItem('IMAccountToken');
-        localStorage.removeItem('IMAdminToken');
+        clearAuthStorage();
         history.push('/login');
-        return Promise.reject(data.errDlt || data.errMsg || '未知Token错误');
+        return Promise.reject(data.errDlt || data.errMsg || 'Token error');
       }
 
       if (tokenErrCode.includes(data?.errCode)) {
-        localStorage.removeItem('IMAccountToken');
-        localStorage.removeItem('IMAdminToken');
+        clearAuthStorage();
         history.push('/login');
-        return Promise.reject(data.errDlt || data.errMsg || '登录已过期');
+        return Promise.reject(data.errDlt || data.errMsg || 'Login expired');
       }
 
       if (data?.errCode === 12002) {
-        message.error('抽奖活动名称已存在');
-        return Promise.reject(data.errDlt || data.errMsg || '抽奖活动名称已存在');
+        message.error('Name already exists');
+        return Promise.reject(data.errDlt || data.errMsg || 'Name already exists');
       }
 
       if (data?.errCode === 10301) {
-        message.error('批量导入用户数量超过了限制，最多1000个用户');
-        return Promise.reject(data.errDlt || data.errMsg || '批量导入用户数量超过了限制');
+        message.error('Import user count exceeds the limit');
+        return Promise.reject(data.errDlt || data.errMsg || 'Import user count exceeds the limit');
       }
 
-      // 处理错误码不为0的情况
       if (data?.errCode !== 0 && data?.errCode !== undefined) {
         const errMsg = getErrCodeMessage(data.errCode);
         if (errMsg) {
@@ -102,15 +125,14 @@ export const errorConfig: RequestConfig = {
         } else if (data.errMsg) {
           message.error(data.errMsg);
         } else {
-          message.error('操作失败，请稍后重试');
+          message.error('Operation failed');
         }
-        return Promise.reject(data.errDlt || data.errMsg || '操作失败');
+        return Promise.reject(data.errDlt || data.errMsg || 'Operation failed');
       }
 
-      // 处理使用旧格式响应的情况 (code/msg)
       if (data?.code !== undefined && data?.code !== 0) {
-        message.error(data.msg || '操作失败，请稍后重试');
-        return Promise.reject(data.msg || '操作失败');
+        message.error(data.msg || 'Operation failed');
+        return Promise.reject(data.msg || 'Operation failed');
       }
 
       return response;

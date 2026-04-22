@@ -13,6 +13,23 @@ type FormField = {
   password: string;
 };
 
+const normalizeOrganizationId = (organization: any): string | null => {
+  const candidates = [
+    organization?.id,
+    organization?._id,
+    organization?.id?.$oid,
+    organization?._id?.$oid,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && /^[a-f\d]{24}$/i.test(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+};
+
 const Login = () => {
   const intl = useIntl();
   const [loading, setLoading] = useState(false);
@@ -28,37 +45,57 @@ const Login = () => {
       });
 
       console.log('data', data);
+
       if (data.organization === null) {
-        message.error('该账号无访问权限');
+        message.error('No access permission');
         setLoading(false);
         return;
       }
 
-      // localStorage.setItem('level', String(data.level));
+      const organizationId = normalizeOrganizationId(data.organization);
+      if (!organizationId) {
+        message.error('Login succeeded, but organization id is invalid');
+        setLoading(false);
+        return;
+      }
+
       localStorage.setItem('IMAccountToken', data.admin_token);
       localStorage.setItem('IMAdminToken', data.im_token);
-      // localStorage.setItem('IMAdminAccount', data.organization.email);
       localStorage.setItem('IMAdminUserID', data.user_id);
       localStorage.setItem('IMUserID', data.im_user_id);
-      localStorage.setItem('OrganizationID', data.organization.id);
-      const res = await walletExist();
-      localStorage.setItem('walletExist', res.data);
-      const { privateKey, publicKey } = generateRSAKeyPair();
-      localStorage.setItem('rsaPrivateKey', privateKey);
-      const {
-        data: { encrypted_aes_key },
-      } = await getAESkey(publicKey);
-      const aesKey = decryptAESKey(encrypted_aes_key, privateKey);
-      console.log(aesKey, 'aesKey');
-      localStorage.setItem('AES_KEY', aesKey);
-      const current = await userInfo({
-        userIDs: [data.im_user_id]
-      });
-      if (current.data.users && current.data.users.length) {
-        await setInitialState((s: any) => ({
-        ...s,
-        currentUser: current.data.users[0],
-      }));
+      localStorage.setItem('OrganizationID', organizationId);
+
+      try {
+        const res = await walletExist();
+        localStorage.setItem('walletExist', res.data);
+      } catch (error) {
+        console.warn('walletExist failed after login', error);
+      }
+
+      try {
+        const { privateKey, publicKey } = generateRSAKeyPair();
+        localStorage.setItem('rsaPrivateKey', privateKey);
+        const {
+          data: { encrypted_aes_key },
+        } = await getAESkey(publicKey);
+        const aesKey = decryptAESKey(encrypted_aes_key, privateKey);
+        localStorage.setItem('AES_KEY', aesKey);
+      } catch (error) {
+        console.warn('getAESkey failed after login', error);
+      }
+
+      try {
+        const current = await userInfo({
+          userIDs: [data.im_user_id],
+        });
+        if (current.data.users && current.data.users.length) {
+          await setInitialState((s: any) => ({
+            ...s,
+            currentUser: current.data.users[0],
+          }));
+        }
+      } catch (error) {
+        console.warn('userInfo failed after login', error);
       }
 
       setTimeout(() => {
@@ -94,7 +131,6 @@ const Login = () => {
               rules={[
                 {
                   required: true,
-                  // message: intl.formatMessage({ id: 'pages.login.correctEmail' }),
                 },
               ]}
             >

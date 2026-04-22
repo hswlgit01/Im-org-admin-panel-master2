@@ -11,9 +11,17 @@ import { userInfo } from './services/account';
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/login';
 
-/**
- * @see  https://umijs.org/zh-CN/plugins/plugin-initial-state
- * */
+const clearAuthStorage = () => {
+  localStorage.removeItem('IMAccountToken');
+  localStorage.removeItem('IMAdminToken');
+  localStorage.removeItem('IMAdminUserID');
+  localStorage.removeItem('IMUserID');
+  localStorage.removeItem('OrganizationID');
+  localStorage.removeItem('walletExist');
+  localStorage.removeItem('rsaPrivateKey');
+  localStorage.removeItem('AES_KEY');
+};
+
 export async function getInitialState(): Promise<{
   settings?: Partial<LayoutSettings>;
   currentUser?: API.AccountManage.AccountInfo;
@@ -22,21 +30,32 @@ export async function getInitialState(): Promise<{
   fetchUserInfo?: () => Promise<API.AccountManage.AccountInfo | undefined>;
 }> {
   const fetchUserInfo = async () => {
+    const token = localStorage.getItem('IMAccountToken');
+    const userID = localStorage.getItem('IMUserID');
+
+    if (!token || !userID) {
+      clearAuthStorage();
+      return undefined;
+    }
+
     try {
-      const user_id = localStorage.getItem('IMUserID');
       const { data } = await userInfo({
-        userIDs: [user_id]
+        userIDs: [userID],
       });
-      if (data.users && data.users.length) {
-         return data.users[0];
+
+      if (data?.users?.length) {
+        return data.users[0];
       }
-     return {};
+
+      clearAuthStorage();
     } catch (error) {
+      clearAuthStorage();
       history.push(loginPath);
     }
+
     return undefined;
   };
-  // 如果不是登录页面，执行
+
   const { location } = history;
   if (location.pathname !== loginPath) {
     const currentUser = await fetchUserInfo();
@@ -46,16 +65,14 @@ export async function getInitialState(): Promise<{
       settings: defaultSettings as Partial<LayoutSettings>,
     };
   }
+
   return {
     fetchUserInfo,
     settings: defaultSettings as Partial<LayoutSettings>,
   };
 }
 
-// ProLayout 支持的api https://procomponents.ant.design/components/layout
 export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) => {
-  console.log('initialState is ', initialState);
-  
   return {
     actionsRender: () => [<VideoPlayer key="video" />, <SelectLang key="SelectLang" />],
     avatarProps: {
@@ -77,7 +94,6 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
     },
     onPageChange: () => {
       const { location } = history;
-      // 如果没有登录，重定向到 login
       if (!initialState?.currentUser && location.pathname !== loginPath) {
         history.push(loginPath);
       }
@@ -104,11 +120,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
     ],
     links: [],
     menuHeaderRender: undefined,
-    // 自定义 403 页面
-    // unAccessible: <div>unAccessible</div>,
-    // 增加一个 loading 的状态
     childrenRender: (children) => {
-      // if (initialState?.loading) return <PageLoading />;
       return (
         <>
           {children}
@@ -132,11 +144,6 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
   };
 };
 
-/**
- * @name request 配置，可以配置错误处理
- * 它基于 axios 和 ahooks 的 useRequest 提供了一套统一的网络请求和错误处理方案。
- * @doc https://umijs.org/docs/max/request#配置
- */
 export const request = {
   ...errorConfig,
 };
