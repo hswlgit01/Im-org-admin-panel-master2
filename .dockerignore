@@ -1,5 +1,5 @@
-# 依赖目录（注释掉 node_modules，允许复制到构建阶段）
-# node_modules
+# 依赖目录 —— 构建阶段在容器里 npm install，不要拷贝宿主 node_modules
+node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

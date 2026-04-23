@@ -1,42 +1,27 @@
 # ============================================
-# Im-org-admin-panel CI/CD 流水线配置
+# Im-org-admin-panel CI/CD
 # ============================================
 
 name: Build & Deploy Admin Panel
 
 on:
   push:
-    branches: [master]
+    branches: [master, dev]
   workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22.13.1'
-
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Install dependencies
-        run: pnpm install
-             pnpm add xlsx
-
-      - name: Build project
-        run: pnpm run build
-
       - name: Build Docker image
-        run: docker build -t free-im-admin:latest .
+        run: docker build -t freechat-admin:latest .
 
       - name: Save image to file
-        run: docker save free-im-admin:latest | gzip > free-im-admin.tar.gz
+        run: docker save freechat-admin:latest | gzip > freechat-admin.tar.gz
 
       - name: Copy to server
         uses: appleboy/scp-action@v0.1.7
@@ -44,7 +29,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
-          source: "free-im-admin.tar.gz"
+          source: "freechat-admin.tar.gz"
           target: "/root/deploy/"
 
       - name: Deploy on server
@@ -54,9 +39,15 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-            docker load < /root/deploy/free-im-admin.tar.gz
-            rm -f /root/deploy/free-im-admin.tar.gz
-            docker stop free-im-admin 2>/dev/null || true
-            docker rm free-im-admin 2>/dev/null || true
-            docker run -d --name free-im-admin --restart unless-stopped -p 11002:80 free-im-admin:latest
-            docker ps | grep free-im-admin
+            set -e
+            docker stop freechat-admin 2>/dev/null || true
+            docker rm   freechat-admin 2>/dev/null || true
+            docker rmi  freechat-admin:latest 2>/dev/null || true
+            docker load < /root/deploy/freechat-admin.tar.gz
+            rm -f /root/deploy/freechat-admin.tar.gz
+            docker run -d --name freechat-admin \
+              --restart unless-stopped \
+              -p 11002:80 \
+              freechat-admin:latest
+            sleep 2
+            docker ps --filter name=freechat-admin
