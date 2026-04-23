@@ -45,9 +45,12 @@ jobs:
             docker rmi  freechat-admin:latest 2>/dev/null || true
             docker load < /root/deploy/freechat-admin.tar.gz
             rm -f /root/deploy/freechat-admin.tar.gz
+            # --network host so nginx 能直达宿主机 127.0.0.1:10008/10009/10002。
+            # chat-api-admin (10009) 配置是 listenIP: localhost，仅在宿主 127.0.0.1
+            # 上监听；bridge 网络容器够不着，host 模式可以。nginx 自己也改成直接
+            # listen 11002（不再用 -p 11002:80 做端口映射）。
             docker run -d --name freechat-admin \
-              --restart unless-stopped \
-              -p 11002:80 \
+              --network host --restart unless-stopped \
               freechat-admin:latest
             sleep 2
             docker ps --filter name=freechat-admin

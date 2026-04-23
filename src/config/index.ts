@@ -1,15 +1,17 @@
-// Local development config.
-// Copy this file to Im-org-admin-panel-master/src/config/index.ts.
-// Required: Free-IM-Server and Free-IM-Chat-master are running locally.
+// Production config: all backend endpoints are served by the same origin through
+// the admin-panel nginx reverse proxy (see nginx.conf). Relative URLs avoid
+// baking host/port into the bundle and make the image portable between envs.
+//
+// For local dev, copy the file shown in the comments below into this path and
+// the umi dev server's proxy (config/proxy.ts) will take over.
 
-// Free-IM-Server WebSocket
-export const WS_URL = 'ws://127.0.0.1:10001';
+export const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
 
-// Free-IM-Server API
-export const API_URL = 'http://127.0.0.1:10002';
+// Free-IM-Server API — same origin, nginx proxies /api/* → 127.0.0.1:10002
+export const API_URL = '';
 
-// Free-IM-Chat-master chat-api
-export const CHAT_URL = 'http://127.0.0.1:10008';
+// Free-IM-Chat chat-api — nginx proxies /third_admin/* & /third/* → 127.0.0.1:10008
+export const CHAT_URL = '';
 
-// Free-IM-Chat-master admin-api / account token API
-export const ACCOUNT_URL = 'http://127.0.0.1:10009';
+// Free-IM-Chat admin-api — nginx proxies /complete_admin/* → 127.0.0.1:10009
+export const ACCOUNT_URL = '';
