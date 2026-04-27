@@ -1,11 +1,12 @@
 import OIMAvatar from '@/components/OIMAvatar';
+// dawn 2026-04-27 删 updateUserAuth：UserList 的"非好友发送消息"开关已移除，
+// 这个 service 在本页不再被调用，留着会触发 ESLint no-unused-vars。
 import {
   downloadTemplate,
   postOrgUserWalletSnapshot,
   selectMemberList,
   updateUserRole,
   uploadTemplate,
-  updateUserAuth,
 } from '@/services/account';
 import { assignUserTag, selectUserTagsList } from '@/services/checkin';
 import {
@@ -18,7 +19,8 @@ import { formatUTCTimeToBeijing, getResourceUrl } from '@/utils/common';
 import type { ActionType, FormInstance, ProColumns } from '@ant-design/pro-components';
 import { ModalForm, PageContainer, ProFormCheckbox, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { Button, Form, message, Popconfirm, Select, Space, Tag, Upload, Switch, Input, Modal } from 'antd';
+// dawn 2026-04-27 删 Switch：用户列表 can_send_free_msg 开关已移除，本页不再使用 Switch
+import { Button, Form, message, Popconfirm, Select, Space, Tag, Upload, Input, Modal } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import ForcedOfflineDrawer from './ForcedOfflineDrawer';
