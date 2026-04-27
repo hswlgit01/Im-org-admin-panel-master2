@@ -385,38 +385,10 @@ const UserList = () => {
           return row.attribute?.account ?? row.account ?? '-';
         },
       },
-      {
-        title: '非好友发送消息',
-        key: 'can_send_free_msg',
-        dataIndex: 'can_send_free_msg',
-        valueType: 'select',
-        valueEnum: {
-          0: { text: '禁止', status: 'Default' },
-          1: { text: '允许', status: 'Success' },
-        },
-        width: 120,
-        render: (text, record) => {
-          return (
-            <Switch
-              checked={record.user.can_send_free_msg === 1}
-              onChange={async (checked) => {
-                try {
-                  await updateUserAuth({
-                    user_id: record.user_id,
-                    can_send_free_msg: checked ? 1 : 0,
-                  })
-                  actionRef?.current?.reload();
-                  message.success('操作成功');
-                } catch (error) {
-                  // message.error(error.message);
-                  console.log(error);
-                }
-              }}
-            />
-          );
-        },
-        align: 'center',
-      },
+      // dawn 2026-04-27 删除用户列表里"非好友发送消息"的开关：
+      // 这个权限本质属于角色权限（free_private_chat），已经在「角色列表」里管理，
+      // 后端 roleCanSendFreeMsg() 会按角色刷新 user.can_send_free_msg。用户列表
+      // 再保留一个个人级开关会让两套权限来源互相覆盖，按用户要求改成只走角色页配置。
       {
         title: 'IP地址',
         key: 'login_ip',
