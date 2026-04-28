@@ -24,6 +24,7 @@ export default {
   'menu.IM.Register': 'Registration Management',
   'menu.IM.Register.DefaultFriends': 'Default Friends',
   'menu.IM.Register.DefaultGroup': 'Default Group',
+  'menu.IM.Register.IPBlock': 'IP Block',
 
   'menu.IM.Wallet': 'Wallet Management',
   'menu.IM.Wallet.CompensationSettings': 'Compensation Settings',

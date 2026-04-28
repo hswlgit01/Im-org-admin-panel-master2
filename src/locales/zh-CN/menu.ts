@@ -26,6 +26,7 @@ export default {
   'menu.IM.Register': '注册管理',
   'menu.IM.Register.DefaultFriends': '默认好友',
   'menu.IM.Register.DefaultGroup': '默认群组',
+  'menu.IM.Register.IPBlock': 'IP封锁',
 
   'menu.IM.Wallet': '钱包管理',
   'menu.IM.Wallet.CompensationSettings': '补偿金设置',

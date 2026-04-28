@@ -161,7 +161,12 @@ export default [
             path: '/im/register/default_group',
             component: './chat/register/DefaultGroup',
           },
-        ]
+          {
+            name: 'IPBlock',
+            path: '/im/register/ip_block',
+            component: './chat/register/IPBlock',
+          },
+        ],
       },
       {
         path: '/im/transaction',
