@@ -7,6 +7,7 @@ import HierarchyTree from './components/HierarchyTree';
 import UserDetail from './components/UserDetail';
 import DirectDownline from './components/DirectDownline';
 import SearchUser from './components/SearchUser';
+import { getStoredOrganizationId } from '@/utils/organization';
 
 const Hierarchy: React.FC = () => {
   const intl = useIntl();
@@ -20,7 +21,7 @@ const Hierarchy: React.FC = () => {
 
   // 检查组织ID是否存在
   useEffect(() => {
-    const orgId = localStorage.getItem('OrganizationID');
+    const orgId = getStoredOrganizationId();
     setHasOrgId(!!orgId);
     setLoading(false);
   }, []);

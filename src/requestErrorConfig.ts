@@ -5,6 +5,7 @@ import type { RequestConfig } from '@umijs/max';
 import { history } from '@umijs/max';
 import { message } from 'antd';
 import { v4 } from 'uuid';
+import { getStoredOrganizationId } from '@/utils/organization';
 
 interface ResponseStructure {
   data: any;
@@ -50,16 +51,19 @@ export const errorConfig: RequestConfig = {
         requestUrl = `${CHAT_URL}${requestUrl}`;
       }
 
-      const organizationId = localStorage.getItem('OrganizationID');
-      const isValidOrganizationId = !!organizationId && /^[a-f\d]{24}$/i.test(organizationId);
+      const organizationId = getStoredOrganizationId();
       const authHeader: any = {
         ...config.headers,
         token:
           localStorage.getItem(config.headers?.isAccount ? 'IMAccountToken' : 'IMAdminToken') ?? '',
         operationID: v4(),
       };
+      delete authHeader.orgid;
+      delete authHeader.orgId;
+      delete authHeader.organizationId;
+      delete authHeader.OrganizationID;
 
-      if (isValidOrganizationId) {
+      if (organizationId) {
         // 确保使用正确的请求头名称（全小写）
         authHeader.orgid = organizationId;
         console.log('[Request Interceptor - Setting Headers]', {
@@ -71,7 +75,7 @@ export const errorConfig: RequestConfig = {
         console.warn('[Request Interceptor - WARNING] Invalid or missing OrganizationID', {
           url: requestUrl,
           organizationId,
-          isValid: isValidOrganizationId,
+          isValid: false,
         });
       }
 

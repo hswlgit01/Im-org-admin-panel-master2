@@ -7,27 +7,11 @@ import { history, useIntl, useModel } from '@umijs/max';
 import { Button, Checkbox, Form, Input, message } from 'antd';
 import md5 from 'md5';
 import { useState } from 'react';
+import { normalizeOrganizationId } from '@/utils/organization';
 
 type FormField = {
   account: string;
   password: string;
-};
-
-const normalizeOrganizationId = (organization: any): string | null => {
-  const candidates = [
-    organization?.id,
-    organization?._id,
-    organization?.id?.$oid,
-    organization?._id?.$oid,
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string' && /^[a-f\d]{24}$/i.test(candidate)) {
-      return candidate;
-    }
-  }
-
-  return null;
 };
 
 const Login = () => {

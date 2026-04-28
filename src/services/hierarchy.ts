@@ -1,12 +1,42 @@
 import { CHAT_URL } from '@/config';
 import { request } from '@umijs/max';
 import { v4 as uuidv4 } from 'uuid';
+import { getStoredOrganizationId } from '@/utils/organization';
+
+const getHierarchyAuth = () => {
+  const orgId = getStoredOrganizationId();
+  const token = localStorage.getItem('IMAccountToken');
+
+  if (!orgId) {
+    throw new Error('组织ID无效或缺失，请重新登录');
+  }
+
+  return { orgId, token };
+};
+
+const hierarchyHeaders = (token: string | null) => ({
+  'Content-Type': 'application/json',
+  Accept: 'application/json',
+  operationID: uuidv4(),
+  isAccount: 'true',
+  token: token || '',
+});
+
+const flattenKeys = (obj: Record<string, any>, prefix = ''): string[] => {
+  let keys: string[] = [];
+  Object.keys(obj).forEach((key) => {
+    const fullPath = prefix ? `${prefix}.${key}` : key;
+    keys.push(fullPath);
+    if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+      keys = keys.concat(flattenKeys(obj[key], fullPath));
+    }
+  });
+  return keys;
+};
 
 // 获取层级树结构
 export async function getHierarchyTree(params: API.Hierarchy.GetHierarchyTreeParams) {
-  // 获取组织ID
-  const orgId = localStorage.getItem('OrganizationID');
-  const token = localStorage.getItem('IMAccountToken');
+  const { orgId, token } = getHierarchyAuth();
 
   // 调试认证信息
   console.log('【全面调试】getHierarchyTree 认证信息:', {
@@ -15,11 +45,6 @@ export async function getHierarchyTree(params: API.Hierarchy.GetHierarchyTreePar
     tokenPrefix: token ? token.substring(0, 10) + '...' : '无',
     paramKeys: params ? Object.keys(params) : [],
   });
-
-  // 确保有组织ID
-  if (!orgId) {
-    return Promise.reject('没有找到组织ID，请重新登录');
-  }
 
   // 准备发送请求
   const url = `/third_admin/hierarchy/tree_root`;
@@ -32,31 +57,14 @@ export async function getHierarchyTree(params: API.Hierarchy.GetHierarchyTreePar
       ...(params || {}),  // 确保params不为空
       organization_id: orgId,
     },
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'operationID': uuidv4(),
-      'isAccount': 'true',
-      'token': token || '',
-      'orgId': orgId,
-      'organizationId': orgId,
-      'OrganizationID': orgId,
-    },
+    headers: hierarchyHeaders(token),
     baseURL: CHAT_URL,
   });
 }
 
 // 获取用户直接下级
 export async function getHierarchyChildren(params: API.Hierarchy.GetHierarchyChildrenParams) {
-  // 获取组织ID
-  const orgId = localStorage.getItem('OrganizationID');
-  const token = localStorage.getItem('IMAccountToken');
-
-  // 确保有组织ID和token
-  if (!orgId) {
-    console.error('【严重错误】没有找到组织ID，请重新登录！');
-    return Promise.reject('没有找到组织ID，请重新登录');
-  }
+  const { orgId, token } = getHierarchyAuth();
 
   if (!token) {
     console.error('【严重错误】没有找到token，请重新登录！');
@@ -104,16 +112,7 @@ export async function getHierarchyChildren(params: API.Hierarchy.GetHierarchyChi
   return request<any>(`/third_admin/hierarchy/children`, {
     method: 'GET',
     params: requestParams,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'operationID': uuidv4(),
-      'isAccount': 'true',
-      'token': token || '',
-      'orgId': orgId,
-      'organizationId': orgId,
-      'OrganizationID': orgId,
-    },
+    headers: hierarchyHeaders(token),
     baseURL: CHAT_URL,
   }).then(response => {
     console.log(`【全面调试】getHierarchyChildren API响应:`, response);
@@ -186,32 +185,11 @@ export async function getHierarchyChildren(params: API.Hierarchy.GetHierarchyChi
 
     return response;
   });
-
-  // 辅助函数：扁平化对象键，找出所有可能的字段名
-  function flattenKeys(obj, prefix = '') {
-    let keys = [];
-    for (const key in obj) {
-      const fullPath = prefix ? `${prefix}.${key}` : key;
-      keys.push(fullPath);
-      if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
-        keys = keys.concat(flattenKeys(obj[key], fullPath));
-      }
-    }
-    return keys;
-  }
 }
 
 // 获取用户层级详情
 export async function getHierarchyDetail(params: API.Hierarchy.GetHierarchyDetailParams) {
-  // 获取组织ID
-  const orgId = localStorage.getItem('OrganizationID');
-  const token = localStorage.getItem('IMAccountToken');
-
-  // 确保有组织ID
-  if (!orgId) {
-    console.error('【严重错误】没有找到组织ID，请重新登录！');
-    return Promise.reject('没有找到组织ID，请重新登录');
-  }
+  const { orgId, token } = getHierarchyAuth();
 
   // 准备发送请求
 
@@ -222,31 +200,14 @@ export async function getHierarchyDetail(params: API.Hierarchy.GetHierarchyDetai
       ...(params || {}),  // 确保params不为空
       organization_id: orgId,
     },
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'operationID': uuidv4(),
-      'isAccount': 'true',
-      'token': token || '',
-      'orgId': orgId,
-      'organizationId': orgId,
-      'OrganizationID': orgId,
-    },
+    headers: hierarchyHeaders(token),
     baseURL: CHAT_URL,
   });
 }
 
 // 搜索层级用户
 export async function searchHierarchy(params: API.Hierarchy.SearchHierarchyParams) {
-  // 获取组织ID
-  const orgId = localStorage.getItem('OrganizationID');
-  const token = localStorage.getItem('IMAccountToken');
-
-  // 确保有组织ID
-  if (!orgId) {
-    console.error('【严重错误】没有找到组织ID，请重新登录！');
-    return Promise.reject('没有找到组织ID，请重新登录');
-  }
+  const { orgId, token } = getHierarchyAuth();
 
   // 如果keyword为空，则返回空结果
   if (!params.keyword || params.keyword.trim() === '') {
@@ -281,16 +242,7 @@ export async function searchHierarchy(params: API.Hierarchy.SearchHierarchyParam
   return request<any>(`/third_admin/hierarchy/search_panel`, {
     method: 'POST',
     data: searchParams,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'operationID': uuidv4(),
-      'isAccount': 'true',
-      'token': token || '',
-      'orgId': orgId,
-      'organizationId': orgId,
-      'OrganizationID': orgId,
-    },
+    headers: hierarchyHeaders(token),
     baseURL: CHAT_URL,
   })
     .then(response => {
@@ -302,22 +254,29 @@ export async function searchHierarchy(params: API.Hierarchy.SearchHierarchyParam
         return { data: { users: [] } };
       }
 
+      const normalizedResponse: any = Array.isArray(response)
+        ? { data: { users: response } }
+        : response;
+      if (Array.isArray(response)) {
+        console.log('【搜索】响应本身是数组，作为users');
+      }
+
       // 检查响应格式
       const responseAnalysis = {
-        hasData: !!response.data,
-        hasUsers: !!response.users,
-        hasResult: !!response.result,
-        topLevelKeys: Object.keys(response),
+        hasData: !!normalizedResponse.data,
+        hasUsers: !!normalizedResponse.users,
+        hasResult: !!normalizedResponse.result,
+        topLevelKeys: Object.keys(normalizedResponse),
       };
 
-      if (response.data) {
-        responseAnalysis['dataKeys'] = Object.keys(response.data);
-        responseAnalysis['dataHasUsers'] = !!response.data.users;
-        responseAnalysis['dataHasResult'] = !!response.data.result;
+      if (normalizedResponse.data) {
+        responseAnalysis['dataKeys'] = Object.keys(normalizedResponse.data);
+        responseAnalysis['dataHasUsers'] = !!normalizedResponse.data.users;
+        responseAnalysis['dataHasResult'] = !!normalizedResponse.data.result;
 
-        if (response.data.users) {
-          responseAnalysis['usersIsArray'] = Array.isArray(response.data.users);
-          responseAnalysis['usersLength'] = Array.isArray(response.data.users) ? response.data.users.length : 'not array';
+        if (normalizedResponse.data.users) {
+          responseAnalysis['usersIsArray'] = Array.isArray(normalizedResponse.data.users);
+          responseAnalysis['usersLength'] = Array.isArray(normalizedResponse.data.users) ? normalizedResponse.data.users.length : 'not array';
         }
       }
 
@@ -325,63 +284,59 @@ export async function searchHierarchy(params: API.Hierarchy.SearchHierarchyParam
 
       // 标准化响应格式，确保有users数组
       // 处理各种可能的响应格式
-      if (response.data) {
+      if (normalizedResponse.data) {
         // 直接在data中，最常见的情况
-        if (!response.data.users) {
+        if (!normalizedResponse.data.users) {
           // 检查其他可能的字段名称
-          if (response.data.result) {
+          if (normalizedResponse.data.result) {
             console.log('【搜索】使用data.result作为users');
-            response.data.users = response.data.result;
-          } else if (response.data.list) {
+            normalizedResponse.data.users = normalizedResponse.data.result;
+          } else if (normalizedResponse.data.list) {
             console.log('【搜索】使用data.list作为users');
-            response.data.users = response.data.list;
-          } else if (Array.isArray(response.data)) {
+            normalizedResponse.data.users = normalizedResponse.data.list;
+          } else if (Array.isArray(normalizedResponse.data)) {
             console.log('【搜索】使用data数组作为users');
-            response.data = { users: response.data };
+            normalizedResponse.data = { users: normalizedResponse.data };
           }
         } else {
           console.log('【搜索】使用标准格式data.users');
         }
-      } else if (response.result) {
+      } else if (normalizedResponse.result) {
         // 直接在result中
         console.log('【搜索】使用顶层result作为users');
-        response.data = { users: response.result };
-      } else if (response.users) {
+        normalizedResponse.data = { users: normalizedResponse.result };
+      } else if (normalizedResponse.users) {
         // 直接在users中
         console.log('【搜索】使用顶层users');
-        response.data = { users: response.users };
-      } else if (Array.isArray(response)) {
-        // 响应本身是数组
-        console.log('【搜索】响应本身是数组，作为users');
-        response = { data: { users: response } };
+        normalizedResponse.data = { users: normalizedResponse.users };
       } else {
         // 创建空结果
         console.warn('【搜索】无法识别的响应格式，创建空结果');
-        response.data = { users: [] };
+        normalizedResponse.data = { users: [] };
       }
 
       // 确保users数组存在
-      if (!response.data || !response.data.users) {
+      if (!normalizedResponse.data || !normalizedResponse.data.users) {
         console.warn('【搜索】创建默认的users数组');
-        response.data = { users: [] };
+        normalizedResponse.data = { users: [] };
       }
 
       // 确保users是数组
-      if (!Array.isArray(response.data.users)) {
+      if (!Array.isArray(normalizedResponse.data.users)) {
         console.warn('【搜索】users不是数组，转换为空数组');
-        response.data.users = [];
+        normalizedResponse.data.users = [];
       }
 
-      console.log(`【搜索】处理后的响应包含 ${response.data.users.length} 个结果`);
+      console.log(`【搜索】处理后的响应包含 ${normalizedResponse.data.users.length} 个结果`);
 
       // 如果数组为空但有关键词，输出警告
-      if (response.data.users.length === 0 && params.keyword) {
+      if (normalizedResponse.data.users.length === 0 && params.keyword) {
         console.warn(`【搜索】未找到匹配关键词 "${params.keyword}" 的结果`);
       }
 
-      response.data.total = response.data.users.length;
+      normalizedResponse.data.total = normalizedResponse.data.users.length;
 
-      return response;
+      return normalizedResponse;
     })
     .catch(error => {
       console.error('【搜索】搜索请求失败:', error);
