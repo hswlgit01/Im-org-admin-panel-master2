@@ -16,6 +16,9 @@ const UserDetail: React.FC<UserDetailProps> = ({ user }) => {
   const isOrgNode = user.user_type === 'ORGANIZATION' ||
                    (user.user_id && typeof user.user_id === 'string' &&
                     user.user_id.startsWith('ORG_ROOT_'));
+  const ancestorInfoList = user.ancestor_info_list || [];
+  const ancestorPath = user.ancestor_path || [];
+  const hasAncestors = ancestorInfoList.length > 0 || ancestorPath.length > 0;
 
   // Format user level with different colors based on level
   const getLevelTag = (level: number) => {
@@ -111,13 +114,13 @@ const UserDetail: React.FC<UserDetailProps> = ({ user }) => {
           })}
           span={2}
         >
-          {user.ancestor_path && user.ancestor_path.length > 0 ? (
+          {hasAncestors ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {/* 使用AncestorInfoList显示上级路径，顶层在最上方 */}
-              {user.ancestor_info_list ? (
+              {ancestorInfoList.length > 0 ? (
                 // 使用新的API返回的祖先信息列表
                 // 后端已排序，直接使用API返回的顺序
-                user.ancestor_info_list.map((ancestorInfo, index) => {
+                ancestorInfoList.map((ancestorInfo, index) => {
                   // 构建显示名称
                   let displayName;
                   const { account, nickname, level, user_id: ancestorId } = ancestorInfo;
@@ -139,7 +142,7 @@ const UserDetail: React.FC<UserDetailProps> = ({ user }) => {
                   // 设置层级标签颜色：顶层使用gold，一级使用blue，其他使用green
                   // index=0是顶层，而不是根据level值判断（防止层级值不准确）
                   const isTopLevel = index === 0;
-                  const isDirectParent = index === user.ancestor_info_list.length - 1; // 最后一个是直接上级
+                  const isDirectParent = index === ancestorInfoList.length - 1; // 最后一个是直接上级
                   const tagColor = isTopLevel ? 'gold' : isDirectParent ? 'blue' : 'green';
 
                   return (
@@ -154,12 +157,12 @@ const UserDetail: React.FC<UserDetailProps> = ({ user }) => {
               ) : (
                 // 向后兼容 - 当API尚未更新时使用旧的显示方式
                 // 注意：此处需要反转数组以确保顶层祖先在最上方
-                [...user.ancestor_path].reverse().map((ancestorId, index) => {
+                [...ancestorPath].reverse().map((ancestorId, index) => {
                   // 实际层级 = 总层级 - 当前索引
                   // 如果用户层级为5，有3个祖先，第一个显示的祖先(index=0)应该是最顶层，层级 = 5 - 3 = 2
                   // 第二个显示的祖先(index=1)层级 = 5 - 2 = 3
                   // 第三个显示的祖先(index=2)层级 = 5 - 1 = 4
-                  const actualLevel = user.level - (user.ancestor_path.length - index);
+                  const actualLevel = user.level - (ancestorPath.length - index);
 
                   // 尝试获取用户信息（可能不存在）
                   const ancestorInfo = user[`ancestor_info_${index}`] || {};
@@ -184,7 +187,7 @@ const UserDetail: React.FC<UserDetailProps> = ({ user }) => {
                   // 设置层级标签颜色：顶层使用gold，一级使用blue，其他使用green
                   // 基于索引而不是层级值设置颜色（防止层级计算不准确）
                   const isTopLevel = index === 0; // 第一个元素是顶层
-                  const isDirectParent = index === user.ancestor_path.length - 1; // 最后一个是直接上级
+                  const isDirectParent = index === ancestorPath.length - 1; // 最后一个是直接上级
                   const tagColor = isTopLevel ? 'gold' : isDirectParent ? 'blue' : 'green';
 
                   return (

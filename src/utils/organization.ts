@@ -14,7 +14,13 @@ export const normalizeOrganizationId = (value: unknown): string | null => {
     try {
       return normalizeOrganizationId(JSON.parse(trimmed));
     } catch {
-      return null;
+      const objectIDMatch = trimmed.match(/ObjectID?\(["']?([a-f\d]{24})["']?\)/i);
+      if (objectIDMatch?.[1]) {
+        return objectIDMatch[1];
+      }
+
+      const oidMatch = trimmed.match(/["']?\$oid["']?\s*:\s*["']([a-f\d]{24})["']/i);
+      return oidMatch?.[1] || null;
     }
   }
 
@@ -30,6 +36,8 @@ export const normalizeOrganizationId = (value: unknown): string | null => {
     record.Id,
     record.organization_id,
     record.organizationId,
+    record.$oid,
+    record.oid,
   ];
 
   for (const candidate of candidates) {
@@ -52,4 +60,3 @@ export const getStoredOrganizationId = (): string | null => {
 
   return normalized;
 };
-

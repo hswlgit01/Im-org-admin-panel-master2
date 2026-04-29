@@ -5,12 +5,42 @@ import {
   ModalForm,
   PageContainer,
   ProColumns,
-  ProFormSwitch,
+  ProFormSelect,
   ProFormText,
   ProTable,
 } from '@ant-design/pro-components';
 import { Button, Popconfirm, Space, Tag, message } from 'antd';
 import { useMemo, useRef } from 'react';
+
+const IP_BLOCK_SCOPE_OPTIONS = [
+  { label: '限制登录', value: 4 },
+  { label: '限制注册', value: 5 },
+  { label: '注册和登录', value: 6 },
+];
+
+const getScopeState = (record: Pick<IPBlockItem, 'limit_login' | 'limit_register'>) => {
+  if (record.limit_login && record.limit_register) return 6;
+  if (record.limit_login) return 4;
+  if (record.limit_register) return 5;
+  return 0;
+};
+
+const getScopeLabel = (state: number) => {
+  const option = IP_BLOCK_SCOPE_OPTIONS.find((item) => item.value === state);
+  return option?.label || '未设置';
+};
+
+const getScopeColor = (state: number) => {
+  if (state === 6) return 'volcano';
+  if (state === 4) return 'orange';
+  if (state === 5) return 'red';
+  return 'default';
+};
+
+const scopeToLimitFlags = (state: number) => ({
+  limit_login: state === 4 || state === 6,
+  limit_register: state === 5 || state === 6,
+});
 
 const IPBlock = () => {
   const actionRef = useRef<ActionType>();
@@ -39,12 +69,10 @@ const IPBlock = () => {
         key: 'state',
         hideInTable: true,
         valueType: 'select',
-        initialValue: 0,
-        valueEnum: {
-          0: { text: '全部' },
-          5: { text: '限制注册' },
-          4: { text: '限制登录' },
-          6: { text: '注册和登录' },
+        fieldProps: {
+          allowClear: true,
+          placeholder: '请选择封锁类型',
+          options: IP_BLOCK_SCOPE_OPTIONS,
         },
       },
       {
@@ -60,8 +88,9 @@ const IPBlock = () => {
         hideInSearch: true,
         render: (_, record) => (
           <Space>
-            {record.limit_register ? <Tag color="red">注册</Tag> : null}
-            {record.limit_login ? <Tag color="orange">登录</Tag> : null}
+            <Tag color={getScopeColor(getScopeState(record))}>
+              {getScopeLabel(getScopeState(record))}
+            </Tag>
           </Space>
         ),
       },
@@ -104,7 +133,7 @@ const IPBlock = () => {
         request={async (params = {}) => {
           const { data } = await getIPBlockList({
             keyword: typeof params.keyword === 'string' ? params.keyword.trim() : '',
-            state: Number(params.state ?? 0),
+            state: params.state === undefined || params.state === '' ? 0 : Number(params.state),
             page: params.current || 1,
             page_size: params.pageSize || 10,
           });
@@ -130,14 +159,14 @@ const IPBlock = () => {
                 destroyOnClose: true,
               }}
               initialValues={{
-                limit_register: true,
-                limit_login: false,
+                state: 5,
               }}
               onFinish={async (values) => {
+                const state = Number(values.state || 5);
+                const flags = scopeToLimitFlags(state);
                 await createIPBlock({
                   ip: String(values.ip || '').trim(),
-                  limit_register: Boolean(values.limit_register),
-                  limit_login: Boolean(values.limit_login),
+                  ...flags,
                 });
                 message.success('保存成功');
                 actionRef.current?.reload();
@@ -150,8 +179,12 @@ const IPBlock = () => {
                 rules={[{ required: true, message: '请输入 IP 地址' }]}
                 fieldProps={{ placeholder: '例如 192.168.1.10' }}
               />
-              <ProFormSwitch name="limit_register" label="限制注册" />
-              <ProFormSwitch name="limit_login" label="限制登录" />
+              <ProFormSelect
+                name="state"
+                label="封锁类型"
+                options={IP_BLOCK_SCOPE_OPTIONS}
+                rules={[{ required: true, message: '请选择封锁类型' }]}
+              />
             </ModalForm>,
           ],
           settings: [],

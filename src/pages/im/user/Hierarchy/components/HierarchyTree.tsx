@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Tree, Typography, Avatar, Spin, message, Button, Pagination } from 'antd';
 import { DownOutlined, TeamOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useRequest } from '@umijs/max';
 import { getHierarchyTree, getHierarchyChildren } from '@/services/hierarchy';
 
 const { Text } = Typography;
@@ -14,6 +13,40 @@ const extractChildrenTotal = (res: any): number => {
   const n = Number(raw);
   return Number.isFinite(n) ? n : 0;
 };
+
+const nodeTitleStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  minWidth: 0,
+  maxWidth: '100%',
+} as const;
+
+const nodeAvatarStyle = {
+  marginRight: 8,
+  flex: '0 0 auto',
+} as const;
+
+const primaryTextStyle = {
+  marginRight: 8,
+  maxWidth: 150,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const;
+
+const secondaryNameStyle = {
+  marginRight: 8,
+  maxWidth: 90,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const;
+
+const metaTextStyle = {
+  fontSize: 12,
+  whiteSpace: 'nowrap',
+  flex: '0 0 auto',
+} as const;
 
 interface HierarchyTreeProps {
   treeData?: API.Hierarchy.HierarchyTreeNode;
@@ -64,14 +97,16 @@ const convertToTreeData = (node?: any) => {
   if (isOrgNode) {
     // 组织根节点的显示样式
     title = (
-      <div style={{ display: 'flex', alignItems: 'center' }}>
+      <div style={nodeTitleStyle}>
         <Avatar
           icon={<TeamOutlined />}
           size="small"
-          style={{ marginRight: '8px', backgroundColor: '#722ed1' }}
+          style={{ ...nodeAvatarStyle, backgroundColor: '#722ed1' }}
         />
-        <Text strong style={{ marginRight: '8px', color: '#722ed1' }}>{nickname}</Text>
-        <Text type="secondary" style={{ fontSize: '12px' }}>
+        <Text strong style={{ ...primaryTextStyle, color: '#722ed1' }} title={nickname}>
+          {nickname}
+        </Text>
+        <Text type="secondary" style={metaTextStyle}>
           (组织根节点, 团队: {teamSize}, 直接下级: {directDownlineCount})
         </Text>
       </div>
@@ -79,18 +114,22 @@ const convertToTreeData = (node?: any) => {
   } else {
     // 普通用户的显示样式
     title = (
-      <div style={{ display: 'flex', alignItems: 'center' }}>
+      <div style={nodeTitleStyle}>
         <Avatar
           src={faceUrl}
           icon={<TeamOutlined />}
           size="small"
-          style={{ marginRight: '8px' }}
+          style={nodeAvatarStyle}
         />
-        <Text style={{ marginRight: '8px' }}>{account || userId}</Text>
+        <Text style={primaryTextStyle} title={account || userId}>
+          {account || userId}
+        </Text>
         {nickname && nickname !== account && (
-          <Text type="secondary" style={{ marginRight: '8px' }}>{nickname}</Text>
+          <Text type="secondary" style={secondaryNameStyle} title={nickname}>
+            {nickname}
+          </Text>
         )}
-        <Text type="secondary" style={{ fontSize: '12px' }}>
+        <Text type="secondary" style={metaTextStyle}>
           (团队: {teamSize}, 直接下级: {directDownlineCount})
         </Text>
       </div>
@@ -194,74 +233,6 @@ const HierarchyTree: React.FC<HierarchyTreeProps> = ({
   } | null>(null);
   const [treePagerLoading, setTreePagerLoading] = useState(false);
 
-  /**
-   * 刷新层级树数据
-   * 从服务器获取最新的层级结构，并更新树的显示
-   */
-  const handleRefreshHierarchy = async () => {
-    logTreeState('刷新开始');
-    setRefreshLoading(true);
-
-    try {
-      // 获取最新的层级树数据
-      const res = await getHierarchyTree({});
-
-      // 尝试获取根节点数据，适配不同API响应格式
-      let rootData = null;
-      if (res?.root?.user_id) {
-        rootData = res.root;
-      } else if (res?.data?.root?.user_id) {
-        rootData = res.data.root;
-      } else if (res?.errCode === 0 && res?.data?.root?.user_id) {
-        rootData = res.data.root;
-      } else if (res?.user_id && (
-        res?.user_type === 'ORGANIZATION' ||
-        (typeof res.user_id === 'string' && res.user_id.startsWith('ORG_ROOT_'))
-      )) {
-        rootData = res;
-      }
-
-      // 如果找到了有效的根节点数据
-      if (rootData) {
-        // 确保根节点有children属性
-        if (!rootData.hasOwnProperty('children')) {
-          rootData.children = [];
-        }
-
-        // 保存当前状态和根节点ID
-        const rootNodeId = rootData.user_id;
-        const wasRootExpanded = expandedKeys.includes(rootNodeId);
-
-        // 清空展开键
-        setExpandedKeys([]);
-
-        // 处理数据并更新树节点
-        const newTreeNodes = convertToTreeData(rootData);
-        setTreeNodes(newTreeNodes);
-
-        // 如果根节点有子节点或之前是展开的，则重新设置展开状态
-        if ((rootData.children && rootData.children.length > 0) || wasRootExpanded) {
-          // 延时确保节点状态正确更新
-          setTimeout(() => {
-            setExpandedKeys([rootNodeId]);
-          }, 100);
-        }
-
-        // 重置父级自动展开属性
-        setAutoExpandParent(false);
-        message.success('层级树已刷新');
-      } else {
-        message.warning('获取层级数据失败，请稍后再试');
-      }
-    } catch (error) {
-      console.error('刷新层级树失败:', error);
-      message.error('刷新层级树失败: ' + (error?.message || '未知错误'));
-    } finally {
-      setRefreshLoading(false);
-      logTreeState('刷新结束');
-    }
-  };
-
   // 辅助函数，记录关键树状态（仅在开发环境或需要时使用）
   const logTreeState = (message: string) => {
     if (process.env.NODE_ENV === 'development') {
@@ -272,128 +243,6 @@ const HierarchyTree: React.FC<HierarchyTreeProps> = ({
         rootNodeId: treeNodes.length > 0 ? treeNodes[0].key : 'none',
         refreshLoading
       });
-    }
-  };
-
-  /**
-   * 预加载组织根节点的子节点并更新统计数据
-   * 当获取到根节点但根节点没有子节点数据时调用
-   * @param rootId 根节点ID (以 ORG_ROOT_ 开头)
-   */
-  const preloadRootNodeChildren = async (rootId: string) => {
-    if (process.env.NODE_ENV === 'development') {
-      logTreeState(`准备预加载节点 ${rootId} 的子节点`);
-    }
-
-    // 只处理组织根节点
-    if (!rootId || !rootId.startsWith('ORG_ROOT_')) {
-      return;
-    }
-
-    try {
-      const res = await getHierarchyChildren({
-        user_id: rootId,
-        page: 1,
-        page_size: HIERARCHY_PAGE_SIZE,
-      });
-
-      let childrenData = extractChildrenData(res);
-      const apiTotal = extractChildrenTotal(res);
-
-      // 找到对应的根节点
-      if (treeNodes && treeNodes.length > 0 && treeNodes[0].key === rootId) {
-        const rootNode = treeNodes[0];
-
-        if (childrenData.length > 0) {
-          const directDownlineCount = apiTotal > 0 ? apiTotal : childrenData.length;
-          let teamSize = 0;
-
-          // 计算整个团队规模 (子节点team_size总和 + 直接下级人数)
-          childrenData.forEach(child => {
-            teamSize += (child.team_size || 0);
-          });
-          teamSize += directDownlineCount;
-
-          // 更新原始数据
-          if (rootNode._orgData) {
-            rootNode._orgData.teamSize = teamSize;
-            rootNode._orgData.directDownlineCount = directDownlineCount;
-          }
-
-          // 标准化子节点数据，确保字段名称统一
-          childrenData = childrenData.map(standardizeUserData);
-
-          // 将子节点数据转换为树节点
-          const newChildren = childrenData
-            .filter(child => child && typeof child === 'object')
-            .map(child => {
-              const childNodes = convertToTreeData(child);
-              return childNodes && childNodes.length > 0 ? childNodes[0] : null;
-            })
-            .filter(node => node !== null);
-
-          // 过滤掉与根节点相同的节点（避免循环引用）
-          const filteredChildren = newChildren.filter(child =>
-            child.key !== rootNode.key &&
-            !(typeof child.key === 'string' &&
-              typeof rootNode.key === 'string' &&
-              child.key.startsWith('ORG_ROOT_') &&
-              rootNode.key.startsWith('ORG_ROOT_'))
-          );
-
-          // 更新根节点子节点和属性
-          rootNode.children = filteredChildren;
-          rootNode.isLeaf = false; // 确保根节点不是叶子节点
-
-          // 强制整个树重新渲染
-          if (treeNodes && treeNodes.length > 0 && treeNodes[0].key === rootId) {
-            treeNodes[0].children = filteredChildren;
-
-            // 设置为当前激活节点
-            setSelectedKeys([rootId]);
-
-            // 强制刷新UI
-            setAutoExpandParent(true);
-            setTimeout(() => {
-              setAutoExpandParent(false);
-            }, 100);
-
-            // 设置展开状态
-            if (!expandedKeys.includes(rootId)) {
-              setExpandedKeys([...expandedKeys, rootId]);
-            }
-          }
-
-          // 更新根节点的显示内容
-          const avatarBackground = { backgroundColor: '#722ed1' };
-          rootNode.title = (
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar
-                icon={<TeamOutlined />}
-                size="small"
-                style={{ marginRight: '8px', ...avatarBackground }}
-              />
-              <Text strong style={{ marginRight: '8px', color: '#722ed1' }}>
-                {treeData?.nickname || "组织根节点"}
-              </Text>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                (组织根节点, 团队: {teamSize}, 直接下级: {directDownlineCount})
-              </Text>
-            </div>
-          );
-
-          // 强制更新UI
-          setExpandedKeys([...expandedKeys]);
-
-          if (apiTotal > HIERARCHY_PAGE_SIZE) {
-            setChildrenListPagination({ parentKey: rootId, page: 1, total: apiTotal });
-          } else {
-            setChildrenListPagination((prev) => (prev?.parentKey === rootId ? null : prev));
-          }
-        }
-      }
-    } catch (error) {
-      console.error('预加载虚拟根节点子节点失败:', error);
     }
   };
 
@@ -497,6 +346,198 @@ const HierarchyTree: React.FC<HierarchyTreeProps> = ({
     }
 
     return childrenData;
+  };
+
+  /**
+   * 刷新层级树数据
+   * 从服务器获取最新的层级结构，并更新树的显示
+   */
+  const handleRefreshHierarchy = async () => {
+    logTreeState('刷新开始');
+    setRefreshLoading(true);
+
+    try {
+      // 获取最新的层级树数据
+      const res = await getHierarchyTree({});
+
+      // 尝试获取根节点数据，适配不同API响应格式
+      let rootData = null;
+      if (res?.root?.user_id) {
+        rootData = res.root;
+      } else if (res?.data?.root?.user_id) {
+        rootData = res.data.root;
+      } else if (res?.user_id && (
+        res?.user_type === 'ORGANIZATION' ||
+        (typeof res.user_id === 'string' && res.user_id.startsWith('ORG_ROOT_'))
+      )) {
+        rootData = res;
+      }
+
+      // 如果找到了有效的根节点数据
+      if (rootData) {
+        // 确保根节点有children属性
+        if (!rootData.hasOwnProperty('children')) {
+          rootData.children = [];
+        }
+
+        // 保存当前状态和根节点ID
+        const rootNodeId = rootData.user_id;
+        const wasRootExpanded = expandedKeys.includes(rootNodeId);
+
+        // 清空展开键
+        setExpandedKeys([]);
+
+        // 处理数据并更新树节点
+        const newTreeNodes = convertToTreeData(rootData);
+        setTreeNodes(newTreeNodes);
+
+        // 如果根节点有子节点或之前是展开的，则重新设置展开状态
+        if ((rootData.children && rootData.children.length > 0) || wasRootExpanded) {
+          // 延时确保节点状态正确更新
+          setTimeout(() => {
+            setExpandedKeys([rootNodeId]);
+          }, 100);
+        }
+
+        // 重置父级自动展开属性
+        setAutoExpandParent(false);
+        message.success('层级树已刷新');
+      } else {
+        message.warning('获取层级数据失败，请稍后再试');
+      }
+    } catch (error) {
+      console.error('刷新层级树失败:', error);
+      message.error('刷新层级树失败: ' + (error?.message || '未知错误'));
+    } finally {
+      setRefreshLoading(false);
+      logTreeState('刷新结束');
+    }
+  };
+
+  /**
+   * 预加载组织根节点的子节点并更新统计数据
+   * 当获取到根节点但根节点没有子节点数据时调用
+   * @param rootId 根节点ID (以 ORG_ROOT_ 开头)
+   */
+  const preloadRootNodeChildren = async (rootId: string) => {
+    if (process.env.NODE_ENV === 'development') {
+      logTreeState(`准备预加载节点 ${rootId} 的子节点`);
+    }
+
+    // 只处理组织根节点
+    if (!rootId || !rootId.startsWith('ORG_ROOT_')) {
+      return;
+    }
+
+    try {
+      const res = await getHierarchyChildren({
+        user_id: rootId,
+        page: 1,
+        page_size: HIERARCHY_PAGE_SIZE,
+      });
+
+      let childrenData = extractChildrenData(res);
+      const apiTotal = extractChildrenTotal(res);
+
+      // 找到对应的根节点
+      if (treeNodes && treeNodes.length > 0 && treeNodes[0].key === rootId) {
+        const rootNode = treeNodes[0];
+
+        if (childrenData.length > 0) {
+          const directDownlineCount = apiTotal > 0 ? apiTotal : childrenData.length;
+          let teamSize = 0;
+
+          // 计算整个团队规模 (子节点team_size总和 + 直接下级人数)
+          childrenData.forEach(child => {
+            teamSize += (child.team_size || 0);
+          });
+          teamSize += directDownlineCount;
+
+          // 更新原始数据
+          if (rootNode._orgData) {
+            rootNode._orgData.teamSize = teamSize;
+            rootNode._orgData.directDownlineCount = directDownlineCount;
+          }
+
+          // 标准化子节点数据，确保字段名称统一
+          childrenData = childrenData.map(standardizeUserData);
+
+          // 将子节点数据转换为树节点
+          const newChildren = childrenData
+            .filter(child => child && typeof child === 'object')
+            .map(child => {
+              const childNodes = convertToTreeData(child);
+              return childNodes && childNodes.length > 0 ? childNodes[0] : null;
+            })
+            .filter(node => node !== null);
+
+          // 过滤掉与根节点相同的节点（避免循环引用）
+          const filteredChildren = newChildren.filter(child =>
+            child.key !== rootNode.key &&
+            !(typeof child.key === 'string' &&
+              typeof rootNode.key === 'string' &&
+              child.key.startsWith('ORG_ROOT_') &&
+              rootNode.key.startsWith('ORG_ROOT_'))
+          );
+
+          // 更新根节点子节点和属性
+          rootNode.children = filteredChildren;
+          rootNode.isLeaf = false; // 确保根节点不是叶子节点
+
+          // 强制整个树重新渲染
+          if (treeNodes && treeNodes.length > 0 && treeNodes[0].key === rootId) {
+            treeNodes[0].children = filteredChildren;
+
+            // 设置为当前激活节点
+            setSelectedKeys([rootId]);
+
+            // 强制刷新UI
+            setAutoExpandParent(true);
+            setTimeout(() => {
+              setAutoExpandParent(false);
+            }, 100);
+
+            // 设置展开状态
+            if (!expandedKeys.includes(rootId)) {
+              setExpandedKeys([...expandedKeys, rootId]);
+            }
+          }
+
+          // 更新根节点的显示内容
+          const avatarBackground = { backgroundColor: '#722ed1' };
+          rootNode.title = (
+            <div style={nodeTitleStyle}>
+              <Avatar
+                icon={<TeamOutlined />}
+                size="small"
+                style={{ ...nodeAvatarStyle, ...avatarBackground }}
+              />
+              <Text
+                strong
+                style={{ ...primaryTextStyle, color: '#722ed1' }}
+                title={treeData?.nickname || "组织根节点"}
+              >
+                {treeData?.nickname || "组织根节点"}
+              </Text>
+              <Text type="secondary" style={metaTextStyle}>
+                (组织根节点, 团队: {teamSize}, 直接下级: {directDownlineCount})
+              </Text>
+            </div>
+          );
+
+          // 强制更新UI
+          setExpandedKeys([...expandedKeys]);
+
+          if (apiTotal > HIERARCHY_PAGE_SIZE) {
+            setChildrenListPagination({ parentKey: rootId, page: 1, total: apiTotal });
+          } else {
+            setChildrenListPagination((prev) => (prev?.parentKey === rootId ? null : prev));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('预加载虚拟根节点子节点失败:', error);
+    }
   };
 
   const treeNodesRef = useRef<any[]>([]);
@@ -703,6 +744,16 @@ const HierarchyTree: React.FC<HierarchyTreeProps> = ({
   }, [treeData]); // 移除selectedUserId依赖，避免选择用户时触发重新加载
 
   /**
+   * 处理节点异步加载数据（首屏每父节点仅拉一页，翻页用底部 Pagination）
+   */
+  const onLoadData = async (treeNode: any) => {
+    if (process.env.NODE_ENV === 'development') {
+      logTreeState(`开始加载节点 ${treeNode.key} 数据`);
+    }
+    await loadChildrenForNode(treeNode, 1, { force: false });
+  };
+
+  /**
    * 处理节点展开事件
    * 当用户点击展开节点图标时触发
    * @param expandedKeysValue 当前所有展开节点的key数组
@@ -760,16 +811,6 @@ const HierarchyTree: React.FC<HierarchyTreeProps> = ({
     // 更新展开状态
     setExpandedKeys(expandedKeysValue);
     setAutoExpandParent(false);
-  };
-
-  /**
-   * 处理节点异步加载数据（首屏每父节点仅拉一页，翻页用底部 Pagination）
-   */
-  const onLoadData = async (treeNode: any) => {
-    if (process.env.NODE_ENV === 'development') {
-      logTreeState(`开始加载节点 ${treeNode.key} 数据`);
-    }
-    await loadChildrenForNode(treeNode, 1, { force: false });
   };
 
   /**

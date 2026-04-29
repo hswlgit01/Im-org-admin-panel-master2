@@ -601,6 +601,7 @@ declare namespace API {
     // 层级树节点
     type HierarchyTreeNode = {
       user_id: string;
+      account?: string;
       nickname: string;
       face_url: string;
       level: number;
@@ -608,6 +609,7 @@ declare namespace API {
       direct_downline_count: number;
       children?: HierarchyTreeNode[];
       has_more_children: boolean;
+      user_type?: string;
     };
 
     // 祖先信息，表示祖先节点的账号和昵称信息
@@ -643,8 +645,10 @@ declare namespace API {
     // 获取用户直接下级参数
     type GetHierarchyChildrenParams = {
       user_id: string;
-      page_number: number;
-      show_number: number;
+      page_number?: number;
+      show_number?: number;
+      page?: number;
+      page_size?: number;
     };
 
     // 获取用户直接下级结果
