@@ -37,7 +37,6 @@ export default {
   'menu.IM.Transaction.ReceiveList': '领取列表',
   'menu.IM.Transaction.RedPacketConfig': '红包配置',
 
-
   'menu.IM.Reward': '抽奖管理',
   'menu.IM.Reward.CouponList': '奖券列表',
   'menu.IM.Reward.LotteryList': '奖品列表',
@@ -48,7 +47,6 @@ export default {
   'menu.IM.CheckIn.DailyRewardConfig': '日常签到奖励配置',
   'menu.IM.CheckIn.CheckinRule': '签到规则说明',
   'menu.IM.CheckIn.UserPoints': '用户奖励列表',
-
 
   'menu.IM.Audit': '审核管理',
   'menu.IM.Audit.CheckInStandardAuditList': '签到达标审核列表',
@@ -63,6 +61,7 @@ export default {
   'menu.IM.Group.GroupLog': '群日志',
   'menu.IM.Log': '日志管理',
   'menu.IM.Log.LogList': '日志列表',
+  'menu.IM.Log.AppLog': 'App日志',
 
   // 'menu.IM.Message': '消息管理',
   // 'menu.IM.Message.UserMassage': '用户消息',

@@ -60,6 +60,7 @@ export default {
 
   'menu.IM.Log': 'Log Management',
   'menu.IM.Log.LogList': 'Log List',
+  'menu.IM.Log.AppLog': 'App Logs',
 
   // 'menu.IM.Message': 'Message Management',
   // 'menu.IM.Message.UserMassage': 'User Messages',
@@ -70,7 +71,6 @@ export default {
   'menu.IM.Notification.Publish': 'Send Notification',
   'menu.IM.Notification.ArticleList': 'Article List',
   'menu.IM.Notification.ArticleDetail': 'Article Detail',
-
 
   'menu.Profile': 'Account Settings',
   'menu.Profile.Info': 'Personal Information',
