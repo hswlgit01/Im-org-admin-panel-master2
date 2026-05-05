@@ -309,26 +309,27 @@ export default [
           },
         ],
       },
-      // {
-      //   path: '/im/message',
-      //   name: 'Message',
-      //   routes: [
-      //     {
-      //       path: '/im/message',
-      //       redirect: '/im/message/user_message',
-      //     },
-      //     // {
-      //     //   name: 'UserMassage',
-      //     //   path: '/im/message/user_message',
-      //     //   component: './im/message/UserMessage',
-      //     // },
-      //     {
-      //       name: 'GroupMessage',
-      //       path: '/im/message/group_message',
-      //       component: './im/message/GroupMessage',
-      //     },
-      //   ],
-      // },
+      // dawn 2026-05-05 修复后台聊天记录管理：恢复用户和群聊消息查询菜单。
+      {
+        path: '/im/message',
+        name: 'Message',
+        routes: [
+          {
+            path: '/im/message',
+            redirect: '/im/message/user_message',
+          },
+          {
+            name: 'UserMessage',
+            path: '/im/message/user_message',
+            component: './im/message/UserMessage',
+          },
+          {
+            name: 'GroupMessage',
+            path: '/im/message/group_message',
+            component: './im/message/GroupMessage',
+          },
+        ],
+      },
       {
         path: '/im/log',
         name: 'Log',

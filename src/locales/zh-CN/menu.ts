@@ -63,9 +63,10 @@ export default {
   'menu.IM.Log.LogList': '日志列表',
   'menu.IM.Log.AppLog': 'App日志',
 
-  // 'menu.IM.Message': '消息管理',
-  // 'menu.IM.Message.UserMassage': '用户消息',
-  // 'menu.IM.Message.GroupMessage': '群组消息',
+  // dawn 2026-05-05 修复后台聊天记录菜单：恢复用户消息和群组消息入口。
+  'menu.IM.Message': '消息管理',
+  'menu.IM.Message.UserMessage': '用户消息',
+  'menu.IM.Message.GroupMessage': '群组消息',
 
   'menu.IM.Notification': '通知管理',
   'menu.IM.Notification.AccountList': '通知账号',

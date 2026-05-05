@@ -171,6 +171,10 @@ export default {
   'message.PrivateMessage.close': 'Disable Private Message',
   'message.revokeMessage': 'Revoke',
   'message.revokeMessage.tips': 'Are you sure you want to revoke this message?',
+  // dawn 2026-05-05 修复聊天记录操作文案：补充删除发送方/接收方确认提示。
+  'message.deleteSenderMessage': 'Delete Sender',
+  'message.deleteReceiverMessage': 'Delete Receiver',
+  'message.deleteTargetMessage.tips': 'Delete this local chat record from {userID}?',
   'message.MsgRevokeNotification': 'Message Revoked',
   'message.MsgRevokeNotification.parse': '{revokerNickname} revoked a message',
 

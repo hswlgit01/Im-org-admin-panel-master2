@@ -87,8 +87,8 @@ declare namespace API {
       userID: string;
       onlineStr?: string;
       inGroup?: boolean;
-      isRealNameVerified: boolean;  // 是否已实名认证
-      realName?: string;             // 真实姓名
+      isRealNameVerified: boolean; // 是否已实名认证
+      realName?: string; // 真实姓名
     };
 
     type Member = {
@@ -104,7 +104,11 @@ declare namespace API {
 
     type WalletSnapshotItem = {
       user_id: string;
-      wallet_balances?: { currency_id?: string; currency_name?: string; available_balance?: string }[];
+      wallet_balances?: {
+        currency_id?: string;
+        currency_name?: string;
+        available_balance?: string;
+      }[];
       compensation_balance?: string;
     };
 
@@ -249,12 +253,12 @@ declare namespace API {
       orderKey?: string;
       orderDirection?: 'asc' | 'desc';
       // 时间范围参数
-      applyStartTime?: string;  // 提交开始时间
-      applyEndTime?: string;    // 提交结束时间
+      applyStartTime?: string; // 提交开始时间
+      applyEndTime?: string; // 提交结束时间
       verifyStartTime?: string; // 审核开始时间
-      verifyEndTime?: string;   // 审核结束时间
+      verifyEndTime?: string; // 审核结束时间
       // 其他参数
-      [key: string]: any;      // 允许传递额外的参数
+      [key: string]: any; // 允许传递额外的参数
     };
 
     type GetIdentityListResult = {
@@ -501,6 +505,26 @@ declare namespace API {
       conversationID: string;
       seq: number;
       userID: string;
+      // dawn 2026-05-05 修复后台聊天记录审计：携带消息 ID 和原因字段供后端留痕。
+      serverMsgID?: string;
+      clientMsgID?: string;
+      reason?: string;
+    };
+
+    type DeleteSyncOpt = {
+      IsSyncSelf?: boolean;
+      IsSyncOther?: boolean;
+    };
+
+    type DeleteMessageParams = {
+      conversationID: string;
+      seqs: number[];
+      userID: string;
+      deleteSyncOpt?: DeleteSyncOpt;
+      // dawn 2026-05-05 修复后台聊天记录审计：删除消息时同步记录 server/client 消息 ID 和原因。
+      serverMsgID?: string;
+      clientMsgID?: string;
+      reason?: string;
     };
 
     type OfflinePushInfo = {

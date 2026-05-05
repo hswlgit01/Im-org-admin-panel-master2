@@ -1,10 +1,10 @@
 import OIMAvatar from '@/components/OIMAvatar';
-import { SessionType } from '@/constants/enum';
-import { getMessageList, revokeMessage } from '@/services/message';
+import { canRevokeMessage } from '@/constants/enum';
+import { deleteMessage, getMessageList, revokeMessage } from '@/services/message';
 import { getConversationID } from '@/utils/common';
 import { ActionType, PageContainer, ProColumns, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { message } from 'antd';
+import { Popconfirm, Space, message } from 'antd';
 import moment from 'moment';
 import { MessageType } from 'open-im-sdk';
 import { useMemo, useRef } from 'react';
@@ -14,18 +14,42 @@ const GroupMessage = () => {
   const intl = useIntl();
   const actionRef = useRef<ActionType>();
 
+  // dawn 2026-05-05 修复群聊天记录操作：群会话统一使用 sg_{groupID} 生成规则。
+  const getRecordConversationID = (record: API.ChatLog.ChatLogs) =>
+    getConversationID({
+      groupID: record.chatLog.groupID || record.chatLog.recvID,
+    });
+
   const revokeMessageHandler = async (record: API.ChatLog.ChatLogs) => {
     const options = {
       userID: record.chatLog.sendID,
-      conversationID: getConversationID({
-        sendID: record.chatLog.sendID,
-        recvID: record.chatLog.recvID,
-        isNotification: record.chatLog.sessionType === SessionType.Notification,
-      }),
+      conversationID: getRecordConversationID(record),
       seq: record.chatLog.seq,
+      serverMsgID: record.chatLog.serverMsgID,
+      clientMsgID: record.chatLog.clientMsgID,
     };
     try {
       await revokeMessage(options);
+      message.success(intl.formatMessage({ id: 'api.success' }));
+      actionRef.current?.reload();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const deleteMessageHandler = async (record: API.ChatLog.ChatLogs) => {
+    try {
+      await deleteMessage({
+        userID: record.chatLog.sendID,
+        conversationID: getRecordConversationID(record),
+        seqs: [record.chatLog.seq],
+        deleteSyncOpt: {
+          IsSyncSelf: true,
+          IsSyncOther: false,
+        },
+        serverMsgID: record.chatLog.serverMsgID,
+        clientMsgID: record.chatLog.clientMsgID,
+      });
       message.success(intl.formatMessage({ id: 'api.success' }));
       actionRef.current?.reload();
     } catch (error) {
@@ -217,27 +241,40 @@ const GroupMessage = () => {
           return moment(record.chatLog.createTime).format('YYYY-MM-DD HH:mm:ss');
         },
       },
-      // {
-      //   title: '',
-      //   valueType: 'option',
-      //   key: 'option',
-      //   align: 'center',
-      //   render: (_, record) => {
-      //     const isDisable =
-      //       record.isRevoked || !canRevokeMessage.includes(record.chatLog.contentType);
-      //     return (
-      //       <Popconfirm
-      //         title={intl.formatMessage({ id: 'message.revokeMessage.tips' })}
-      //         onConfirm={() => revokeMessageHandler(record)}
-      //         disabled={isDisable}
-      //       >
-      //         <a style={isDisable ? { color: '#666' } : {}}>
-      //           {intl.formatMessage({ id: 'message.revokeMessage' })}
-      //         </a>
-      //       </Popconfirm>
-      //     );
-      //   },
-      // },
+      {
+        title: '',
+        valueType: 'option',
+        key: 'option',
+        align: 'center',
+        render: (_, record) => {
+          const isDisable =
+            record.isRevoked || !canRevokeMessage.includes(record.chatLog.contentType);
+          return (
+            <Space>
+              <Popconfirm
+                title={intl.formatMessage({ id: 'message.revokeMessage.tips' })}
+                onConfirm={() => revokeMessageHandler(record)}
+                disabled={isDisable}
+              >
+                <a style={isDisable ? { color: '#666' } : {}}>
+                  {intl.formatMessage({ id: 'message.revokeMessage' })}
+                </a>
+              </Popconfirm>
+              <Popconfirm
+                title={intl.formatMessage(
+                  { id: 'message.deleteTargetMessage.tips' },
+                  { userID: record.chatLog.sendID },
+                )}
+                onConfirm={() => deleteMessageHandler(record)}
+              >
+                <a style={{ color: '#ff4d4f' }}>
+                  {intl.formatMessage({ id: 'message.deleteSenderMessage' })}
+                </a>
+              </Popconfirm>
+            </Space>
+          );
+        },
+      },
     ],
     [],
   );

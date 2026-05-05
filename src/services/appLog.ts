@@ -32,6 +32,14 @@ export type AppLogItem = {
     nickname?: string;
     face_url?: string;
   };
+  // dawn 2026-05-05 修复 App 日志类型：补齐后端返回的 org_user 字段。
+  org_user?: {
+    account?: string;
+    nickname?: string;
+    face_url?: string;
+    user_id?: string;
+    im_server_user_id?: string;
+  };
 };
 
 export type AppLogSearchParams = {

@@ -168,6 +168,10 @@ export default {
   'message.PrivateMessage.close': '关闭阅后即焚',
   'message.revokeMessage': '撤回',
   'message.revokeMessage.tips': '确定要撤回该条消息吗？',
+  // dawn 2026-05-05 修复聊天记录操作文案：补充删除发送方/接收方确认提示。
+  'message.deleteSenderMessage': '删发送方',
+  'message.deleteReceiverMessage': '删接收方',
+  'message.deleteTargetMessage.tips': '确定要删除 {userID} 本端的这条聊天记录吗？',
   'message.MsgRevokeNotification': '撤回消息',
   'message.MsgRevokeNotification.parse': '{revokerNickname}撤回了一条消息',
 
