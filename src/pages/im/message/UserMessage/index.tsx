@@ -12,8 +12,6 @@ import MessageParse from '../components/MessageParse';
 const UserMessage = () => {
   const intl = useIntl();
   const actionRef = useRef<ActionType>();
-  // dawn 2026-05-06 修复删除消息无感知：删除成功后当前列表立即隐藏对应消息。
-  const hiddenMessageKeysRef = useRef<Set<string>>(new Set());
 
   // dawn 2026-05-06 修复消息操作无反馈：失败时展示错误，并用确认弹窗替代点击无感的 Popconfirm。
   const getErrorMessage = (error: unknown) =>
@@ -31,13 +29,6 @@ const UserMessage = () => {
     });
 
   // dawn 2026-05-06 修复用户消息排序：当前页按发送者排序，同发送者按发送时间倒序展示。
-  const getRecordMessageKey = (record: API.ChatLog.ChatLogs) =>
-    record.chatLog.serverMsgID
-      ? `server:${record.chatLog.serverMsgID}`
-      : record.chatLog.clientMsgID
-      ? `client:${record.chatLog.clientMsgID}`
-      : `fallback:${record.chatLog.sendID}:${record.chatLog.recvID}:${record.chatLog.seq}`;
-
   const getRecordSenderSortKey = (record: API.ChatLog.ChatLogs) =>
     (record.chatLog.senderNickname || record.chatLog.sendID || '').toLocaleLowerCase();
 
@@ -88,7 +79,6 @@ const UserMessage = () => {
         clientMsgID: record.chatLog.clientMsgID,
       });
       message.success(intl.formatMessage({ id: 'api.success' }));
-      hiddenMessageKeysRef.current.add(getRecordMessageKey(record));
       actionRef.current?.reload();
     } catch (error) {
       console.error(error);
@@ -330,14 +320,10 @@ const UserMessage = () => {
             },
           });
           const sortedLogs = sortMessageLogs(data.chatLogs ?? []);
-          const visibleLogs = sortedLogs.filter(
-            (record) => !hiddenMessageKeysRef.current.has(getRecordMessageKey(record)),
-          );
-          const hiddenCount = sortedLogs.length - visibleLogs.length;
           return {
-            data: visibleLogs,
+            data: sortedLogs,
             success: true,
-            total: Math.max(0, (data.chatLogsNum ?? 0) - hiddenCount),
+            total: data.chatLogsNum,
           };
         }}
         rowKey={(record) => record.chatLog.serverMsgID}
