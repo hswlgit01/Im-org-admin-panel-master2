@@ -3,7 +3,7 @@ import { deleteMessage, getMessageList, revokeMessage } from '@/services/message
 import { getConversationID } from '@/utils/common';
 import { ActionType, PageContainer, ProColumns, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { Popconfirm, Space, message } from 'antd';
+import { Modal, Space, message } from 'antd';
 import moment from 'moment';
 import { MessageType } from 'open-im-sdk';
 import { useMemo, useRef } from 'react';
@@ -12,6 +12,13 @@ import MessageParse from '../components/MessageParse';
 const UserMessage = () => {
   const intl = useIntl();
   const actionRef = useRef<ActionType>();
+
+  // dawn 2026-05-06 修复消息操作无反馈：失败时展示错误，并用确认弹窗替代点击无感的 Popconfirm。
+  const getErrorMessage = (error: unknown) =>
+    (error as { data?: { errDlt?: string; errMsg?: string }; message?: string })?.data?.errDlt ||
+    (error as { data?: { errDlt?: string; errMsg?: string }; message?: string })?.data?.errMsg ||
+    (error as { message?: string })?.message ||
+    intl.formatMessage({ id: 'api.failed' });
 
   // dawn 2026-05-05 修复用户聊天记录操作：复用会话 ID，避免撤回和删除请求不一致。
   const getRecordConversationID = (record: API.ChatLog.ChatLogs) =>
@@ -34,7 +41,8 @@ const UserMessage = () => {
       message.success(intl.formatMessage({ id: 'api.success' }));
       actionRef.current?.reload();
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      message.error(getErrorMessage(error));
     }
   };
 
@@ -54,8 +62,35 @@ const UserMessage = () => {
       message.success(intl.formatMessage({ id: 'api.success' }));
       actionRef.current?.reload();
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      message.error(getErrorMessage(error));
     }
+  };
+
+  const confirmRevokeMessage = (record: API.ChatLog.ChatLogs, disabled: boolean) => {
+    if (disabled) {
+      return;
+    }
+    Modal.confirm({
+      title: intl.formatMessage({ id: 'message.revokeMessage.tips' }),
+      okText: intl.formatMessage({ id: 'confirm' }),
+      cancelText: intl.formatMessage({ id: 'cancel', defaultMessage: '取消' }),
+      onOk: () => revokeMessageHandler(record),
+    });
+  };
+
+  const confirmDeleteMessage = (record: API.ChatLog.ChatLogs, userID: string) => {
+    if (!userID) {
+      message.error(intl.formatMessage({ id: 'api.failed' }));
+      return;
+    }
+    Modal.confirm({
+      title: intl.formatMessage({ id: 'message.deleteTargetMessage.tips' }, { userID }),
+      okText: intl.formatMessage({ id: 'confirm' }),
+      cancelText: intl.formatMessage({ id: 'cancel', defaultMessage: '取消' }),
+      okButtonProps: { danger: true },
+      onOk: () => deleteMessageHandler(record, userID),
+    });
   };
 
   const SessionTypeOtions = [
@@ -150,10 +185,10 @@ const UserMessage = () => {
         render: (_, record) => <MessageParse record={record.chatLog} />,
       },
       {
+        // dawn 2026-05-06 修复用户消息查询：开放发送者名称查询。
         title: intl.formatMessage({ id: 'message.senderNickname' }),
         key: 'senderNickname',
         dataIndex: 'senderNickname',
-        hideInSearch: true,
         align: 'center',
         render: (_, record) => <div>{record.chatLog.senderNickname}</div>,
       },
@@ -171,6 +206,14 @@ const UserMessage = () => {
         dataIndex: 'recvID',
         align: 'center',
         render: (_, record) => <div>{record.chatLog.recvID}</div>,
+      },
+      {
+        // dawn 2026-05-06 修复用户消息查询：新增接收者名称查询和表格列。
+        title: intl.formatMessage({ id: 'message.recvNickname' }),
+        key: 'recvNickname',
+        dataIndex: 'recvNickname',
+        align: 'center',
+        render: (_, record) => <div>{record.chatLog.recvNickname}</div>,
       },
       {
         title: intl.formatMessage({ id: 'message.sessionType' }),
@@ -212,38 +255,24 @@ const UserMessage = () => {
             record.isRevoked || !canRevokeMessage.includes(record.chatLog.contentType);
           return (
             <Space>
-              <Popconfirm
-                title={intl.formatMessage({ id: 'message.revokeMessage.tips' })}
-                onConfirm={() => revokeMessageHandler(record)}
-                disabled={isDisable}
+              <a
+                onClick={() => confirmRevokeMessage(record, isDisable)}
+                style={isDisable ? { color: '#666' } : {}}
               >
-                <a style={isDisable ? { color: '#666' } : {}}>
-                  {intl.formatMessage({ id: 'message.revokeMessage' })}
-                </a>
-              </Popconfirm>
-              <Popconfirm
-                title={intl.formatMessage(
-                  { id: 'message.deleteTargetMessage.tips' },
-                  { userID: record.chatLog.sendID },
-                )}
-                onConfirm={() => deleteMessageHandler(record, record.chatLog.sendID)}
+                {intl.formatMessage({ id: 'message.revokeMessage' })}
+              </a>
+              <a
+                onClick={() => confirmDeleteMessage(record, record.chatLog.sendID)}
+                style={{ color: '#ff4d4f' }}
               >
-                <a style={{ color: '#ff4d4f' }}>
-                  {intl.formatMessage({ id: 'message.deleteSenderMessage' })}
-                </a>
-              </Popconfirm>
-              <Popconfirm
-                title={intl.formatMessage(
-                  { id: 'message.deleteTargetMessage.tips' },
-                  { userID: record.chatLog.recvID },
-                )}
-                onConfirm={() => deleteMessageHandler(record, record.chatLog.recvID)}
-                disabled={!record.chatLog.recvID}
+                {intl.formatMessage({ id: 'message.deleteSenderMessage' })}
+              </a>
+              <a
+                onClick={() => confirmDeleteMessage(record, record.chatLog.recvID)}
+                style={!record.chatLog.recvID ? { color: '#666' } : { color: '#ff4d4f' }}
               >
-                <a style={!record.chatLog.recvID ? { color: '#666' } : { color: '#ff4d4f' }}>
-                  {intl.formatMessage({ id: 'message.deleteReceiverMessage' })}
-                </a>
-              </Popconfirm>
+                {intl.formatMessage({ id: 'message.deleteReceiverMessage' })}
+              </a>
             </Space>
           );
         },
@@ -263,6 +292,8 @@ const UserMessage = () => {
             contentType: params.contentType ?? 0,
             recvID: params.recvID ?? '',
             sendID: params.sendID ?? '',
+            senderNickname: params.senderNickname as string,
+            recvNickname: params.recvNickname as string,
             sendTime: params.sendTime as string,
             pagination: {
               pageNumber: params.current as number,

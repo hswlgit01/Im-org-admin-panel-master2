@@ -4,7 +4,7 @@ import { deleteMessage, getMessageList, revokeMessage } from '@/services/message
 import { getConversationID } from '@/utils/common';
 import { ActionType, PageContainer, ProColumns, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { Popconfirm, Space, message } from 'antd';
+import { Modal, Space, message } from 'antd';
 import moment from 'moment';
 import { MessageType } from 'open-im-sdk';
 import { useMemo, useRef } from 'react';
@@ -13,6 +13,13 @@ import MessageParse from '../components/MessageParse';
 const GroupMessage = () => {
   const intl = useIntl();
   const actionRef = useRef<ActionType>();
+
+  // dawn 2026-05-06 修复消息操作无反馈：失败时展示错误，并用确认弹窗替代点击无感的 Popconfirm。
+  const getErrorMessage = (error: unknown) =>
+    (error as { data?: { errDlt?: string; errMsg?: string }; message?: string })?.data?.errDlt ||
+    (error as { data?: { errDlt?: string; errMsg?: string }; message?: string })?.data?.errMsg ||
+    (error as { message?: string })?.message ||
+    intl.formatMessage({ id: 'api.failed' });
 
   // dawn 2026-05-05 修复群聊天记录操作：群会话统一使用 sg_{groupID} 生成规则。
   const getRecordConversationID = (record: API.ChatLog.ChatLogs) =>
@@ -33,7 +40,8 @@ const GroupMessage = () => {
       message.success(intl.formatMessage({ id: 'api.success' }));
       actionRef.current?.reload();
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      message.error(getErrorMessage(error));
     }
   };
 
@@ -53,8 +61,34 @@ const GroupMessage = () => {
       message.success(intl.formatMessage({ id: 'api.success' }));
       actionRef.current?.reload();
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      message.error(getErrorMessage(error));
     }
+  };
+
+  const confirmRevokeMessage = (record: API.ChatLog.ChatLogs, disabled: boolean) => {
+    if (disabled) {
+      return;
+    }
+    Modal.confirm({
+      title: intl.formatMessage({ id: 'message.revokeMessage.tips' }),
+      okText: intl.formatMessage({ id: 'confirm' }),
+      cancelText: intl.formatMessage({ id: 'cancel', defaultMessage: '取消' }),
+      onOk: () => revokeMessageHandler(record),
+    });
+  };
+
+  const confirmDeleteMessage = (record: API.ChatLog.ChatLogs) => {
+    Modal.confirm({
+      title: intl.formatMessage(
+        { id: 'message.deleteTargetMessage.tips' },
+        { userID: record.chatLog.sendID },
+      ),
+      okText: intl.formatMessage({ id: 'confirm' }),
+      cancelText: intl.formatMessage({ id: 'cancel', defaultMessage: '取消' }),
+      okButtonProps: { danger: true },
+      onOk: () => deleteMessageHandler(record),
+    });
   };
 
   const MessageTypeOtions = [
@@ -251,26 +285,15 @@ const GroupMessage = () => {
             record.isRevoked || !canRevokeMessage.includes(record.chatLog.contentType);
           return (
             <Space>
-              <Popconfirm
-                title={intl.formatMessage({ id: 'message.revokeMessage.tips' })}
-                onConfirm={() => revokeMessageHandler(record)}
-                disabled={isDisable}
+              <a
+                onClick={() => confirmRevokeMessage(record, isDisable)}
+                style={isDisable ? { color: '#666' } : {}}
               >
-                <a style={isDisable ? { color: '#666' } : {}}>
-                  {intl.formatMessage({ id: 'message.revokeMessage' })}
-                </a>
-              </Popconfirm>
-              <Popconfirm
-                title={intl.formatMessage(
-                  { id: 'message.deleteTargetMessage.tips' },
-                  { userID: record.chatLog.sendID },
-                )}
-                onConfirm={() => deleteMessageHandler(record)}
-              >
-                <a style={{ color: '#ff4d4f' }}>
-                  {intl.formatMessage({ id: 'message.deleteSenderMessage' })}
-                </a>
-              </Popconfirm>
+                {intl.formatMessage({ id: 'message.revokeMessage' })}
+              </a>
+              <a onClick={() => confirmDeleteMessage(record)} style={{ color: '#ff4d4f' }}>
+                {intl.formatMessage({ id: 'message.deleteSenderMessage' })}
+              </a>
             </Space>
           );
         },

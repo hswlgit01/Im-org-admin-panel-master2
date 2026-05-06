@@ -144,9 +144,10 @@ export default {
   'app.needInvitationCodeRegister': 'Need invitation code to register',
 
   'message.content': 'Message Content',
-  'message.senderNickname': 'Nickname',
+  'message.senderNickname': 'Sender Name',
   'message.sendID': 'Sender',
   'message.recvID': 'Receiver',
+  'message.recvNickname': 'Receiver Name',
   'message.sessionType': 'SessionType',
   'message.contentType': 'MessageType',
   'message.sendTime': 'Send Time',

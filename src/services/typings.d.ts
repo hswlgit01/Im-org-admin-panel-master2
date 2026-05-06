@@ -456,6 +456,8 @@ declare namespace API {
     type GetChatLogParams = {
       sendID?: string;
       recvID?: string;
+      senderNickname?: string;
+      recvNickname?: string;
       contentType: number;
       sendTime?: string;
       sessionType: number;

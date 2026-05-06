@@ -141,9 +141,10 @@ export default {
   'app.needInvitationCodeRegister': '是否需要邀请码才能注册',
 
   'message.content': '消息内容',
-  'message.senderNickname': '发送者昵称',
+  'message.senderNickname': '发送者名称',
   'message.sendID': '发送者ID',
   'message.recvID': '接收者ID',
+  'message.recvNickname': '接收者名称',
   'message.sessionType': '会话类型',
   'message.contentType': '消息类型',
   'message.sendTime': '发送时间',
