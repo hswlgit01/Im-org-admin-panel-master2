@@ -9,6 +9,44 @@ type MessageParseProps = {
   record: API.ChatLog.ChatLog;
 };
 
+const textWidth = { width: '200px' };
+
+const parseJson = (value?: string) => {
+  if (!value) {
+    return undefined;
+  }
+  try {
+    return JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+};
+
+// dawn 2026-05-08 修复后台消息内容展示：自定义消息里嵌套 data JSON 时展示业务正文，避免直接显示转义 JSON。
+const parseCustomMessageText = (content: string) => {
+  const outer = parseJson(content);
+  if (!outer) {
+    return content;
+  }
+
+  if (typeof outer.content === 'string') {
+    return outer.content;
+  }
+
+  const inner = typeof outer.data === 'string' ? parseJson(outer.data) : outer.data;
+  if (inner && typeof inner.content === 'string') {
+    return inner.content;
+  }
+
+  return content;
+};
+
+const renderEllipsisText = (content: string) => (
+  <Typography.Text ellipsis={{ tooltip: content }} style={textWidth}>
+    {content}
+  </Typography.Text>
+);
+
 const MessageParse: FC<MessageParseProps> = ({ record }) => {
   const intl = useIntl();
   const { setInitialState } = useModel('@@initialState');
@@ -23,11 +61,7 @@ const MessageParse: FC<MessageParseProps> = ({ record }) => {
   try {
     if (record.contentType === MessageType.TextMessage) {
       const content = JSON.parse(record.content).content;
-      return (
-        <Typography.Text ellipsis={{ tooltip: content }} style={{ width: '200px' }}>
-          {content}
-        </Typography.Text>
-      );
+      return renderEllipsisText(content);
     }
 
     if (record.contentType === MessageType.PictureMessage) {
@@ -45,7 +79,7 @@ const MessageParse: FC<MessageParseProps> = ({ record }) => {
         <Typography.Link
           href={JSON.parse(record.content).sourceUrl}
           target="_blank"
-          style={{ width: '200px' }}
+          style={textWidth}
         >
           {intl.formatMessage({ id: 'message.VoiceMessage.parse' })}
         </Typography.Link>
@@ -75,7 +109,7 @@ const MessageParse: FC<MessageParseProps> = ({ record }) => {
         <Typography.Link
           href={JSON.parse(record.content).sourceUrl}
           target="_blank"
-          style={{ width: '200px' }}
+          style={textWidth}
         >
           {intl.formatMessage({ id: 'message.FileMessage.parse' })}
         </Typography.Link>
@@ -84,20 +118,12 @@ const MessageParse: FC<MessageParseProps> = ({ record }) => {
 
     if (record.contentType === MessageType.AtTextMessage) {
       const text = JSON.parse(record.content).text;
-      return (
-        <Typography.Text ellipsis={{ tooltip: text }} style={{ width: '200px' }}>
-          {text}
-        </Typography.Text>
-      );
+      return renderEllipsisText(text);
     }
 
     if (record.contentType === MessageType.MergeMessage) {
       const title = JSON.parse(record.content).title;
-      return (
-        <Typography.Text ellipsis={{ tooltip: title }} style={{ width: '200px' }}>
-          {title}
-        </Typography.Text>
-      );
+      return renderEllipsisText(title);
     }
 
     if (record.contentType === MessageType.CardMessage) {
@@ -116,28 +142,16 @@ const MessageParse: FC<MessageParseProps> = ({ record }) => {
 
     if (record.contentType === MessageType.LocationMessage) {
       const addr = JSON.parse(JSON.parse(record.content).description).addr;
-      return (
-        <Typography.Text ellipsis={{ tooltip: addr }} style={{ width: '200px' }}>
-          {addr}
-        </Typography.Text>
-      );
+      return renderEllipsisText(addr);
     }
 
     if (record.contentType === MessageType.CustomMessage) {
-      return (
-        <Typography.Text ellipsis={{ tooltip: record.content }} style={{ width: '200px' }}>
-          {record.content}
-        </Typography.Text>
-      );
+      return renderEllipsisText(parseCustomMessageText(record.content));
     }
 
     if (record.contentType === MessageType.QuoteMessage) {
       const text = JSON.parse(record.content).text;
-      return (
-        <Typography.Text ellipsis={{ tooltip: text }} style={{ width: '200px' }}>
-          {text}
-        </Typography.Text>
-      );
+      return renderEllipsisText(text);
     }
 
     if (record.contentType === MessageType.FaceMessage) {
