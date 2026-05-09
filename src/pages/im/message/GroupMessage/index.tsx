@@ -223,6 +223,21 @@ const GroupMessage = () => {
         align: 'center',
         render: (_, record) => <div>{record.chatLog.groupName}</div>,
       },
+      // dawn 2026-05-09 修复群聊消息无法按发送者排查：群消息列表补充发送者名称列和查询项。
+      {
+        title: intl.formatMessage({ id: 'message.senderNickname' }),
+        key: 'senderNickname',
+        dataIndex: 'senderNickname',
+        align: 'center',
+        render: (_, record) => <div>{record.chatLog.senderNickname}</div>,
+      },
+      {
+        title: intl.formatMessage({ id: 'message.sendID' }),
+        key: 'sendID',
+        dataIndex: 'sendID',
+        align: 'center',
+        render: (_, record) => <div>{record.chatLog.sendID}</div>,
+      },
       {
         title: intl.formatMessage({ id: 'message.content' }),
         dataIndex: 'content',
@@ -312,7 +327,8 @@ const GroupMessage = () => {
             sessionType: 3,
             contentType: params.contentType ?? 0,
             recvID: params.groupID ?? '',
-            sendID: '',
+            sendID: params.sendID ?? '',
+            senderNickname: params.senderNickname as string,
             sendTime: params.sendTime as string,
             pagination: {
               pageNumber: params.current as number,
