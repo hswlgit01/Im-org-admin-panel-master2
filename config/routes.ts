@@ -328,6 +328,12 @@ export default [
             path: '/im/message/group_message',
             component: './im/message/GroupMessage',
           },
+          // dawn 2026-05-14 新增敏感词维护：在消息管理下挂载词表 CRUD 页面。
+          {
+            name: 'SensitiveWord',
+            path: '/im/message/sensitive_word',
+            component: './im/message/SensitiveWord',
+          },
         ],
       },
       {

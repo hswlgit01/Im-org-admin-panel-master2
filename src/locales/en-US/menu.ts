@@ -66,6 +66,8 @@ export default {
   'menu.IM.Message': 'Message Management',
   'menu.IM.Message.UserMessage': 'User Messages',
   'menu.IM.Message.GroupMessage': 'Group Messages',
+  // dawn 2026-05-14 新增敏感词维护：补充菜单英文名。
+  'menu.IM.Message.SensitiveWord': 'Sensitive Words',
 
   'menu.IM.Notification': 'Notification Management',
   'menu.IM.Notification.AccountList': 'Notification Accounts',
