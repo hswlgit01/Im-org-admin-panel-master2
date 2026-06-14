@@ -319,11 +319,27 @@ declare namespace API {
     };
 
     type GetDefaultGroupParams = {
-      pagination: Pagination;
+      keyword?: string;
+      page?: number;
+      page_size?: number;
+      pagination?: Pagination;
+    };
+
+    type DefaultGroup = {
+      id: string;
+      group_id: string;
+      group_name?: string;
+      org_id: string;
+      salesperson_user_id?: string;
+      salesperson_nickname?: string;
+      salesperson_account?: string;
+      salesperson_im_server_user_id?: string;
+      created_at: number;
     };
 
     type GetDefaultGroupResult = {
-      groups: GroupManage.GroupInfo[];
+      // dawn 2026-06-14 默认群列表增加所属二级业务员展示字段。
+      data: DefaultGroup[];
       total: number;
     };
   }

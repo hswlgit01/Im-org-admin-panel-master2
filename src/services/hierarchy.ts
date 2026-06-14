@@ -346,5 +346,37 @@ export async function searchHierarchy(params: API.Hierarchy.SearchHierarchyParam
     });
 }
 
+// dawn 2026-06-14 默认群所属业务员选择：仅搜索 level=2 的组织用户。
+export async function searchLevel2Salespeople(keyword: string) {
+  const kw = keyword.trim();
+  if (!kw) {
+    return Promise.resolve({ data: { users: [], total: 0 } });
+  }
+
+  const { orgId, token } = getHierarchyAuth();
+  return request<any>(`/third_admin/hierarchy/search_panel`, {
+    method: 'POST',
+    data: {
+      keyword: kw,
+      organization_id: orgId,
+      include_org_nodes: false,
+      level: 2,
+      ancestor_id: '',
+      sort_by_field: 'created_at',
+      sort_order: 'asc',
+    },
+    headers: hierarchyHeaders(token),
+    baseURL: CHAT_URL,
+  }).then((response: any) => {
+    const users = response?.data?.users || response?.users || [];
+    return {
+      data: {
+        users: Array.isArray(users) ? users : [],
+        total: response?.data?.total || 0,
+      },
+    };
+  });
+}
+
 // repairHierarchy 已被移除，使用 getHierarchyTree 获取最新数据代替
 // 此处保留注释，便于后续了解历史变更
