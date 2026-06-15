@@ -125,6 +125,8 @@ export default {
   'group.remove.tips': '确定要移除该成员吗？',
   'group.member.add': '添加群成员',
   'group.select': '选择群组',
+  // dawn 2026-06-15 修复默认群组表格表头：补充 ProTable 操作列国际化文案。
+  'pages.searchTable.titleOption': '操作',
 
   'group.mute.10minute': '10分钟',
   'group.mute.1hour': '1小时',

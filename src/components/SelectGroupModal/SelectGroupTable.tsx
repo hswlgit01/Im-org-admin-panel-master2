@@ -85,7 +85,8 @@ const SelectGroupTable: ForwardRefRenderFunction<SelectGroupTableHandle, SelectG
         key: 'faceURL',
         hideInSearch: true,
         align: 'center',
-        render: (_, record) => <OIMAvatar src={record.faceURL} text={record.groupName} />,
+        // dawn 2026-06-15 修复默认群组选择弹窗群头像破图：群头像加载失败时使用默认群图标兜底。
+        render: (_, record) => <OIMAvatar src={record.faceURL} text={record.groupName} isgroup />,
       },
       {
         title: intl.formatMessage({ id: 'group.groupName' }),

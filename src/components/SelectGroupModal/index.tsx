@@ -26,7 +26,7 @@ const SelectGroupModal = (props: SelectGroupModalProps) => {
     }
   }, [isModalOpen]);
 
-  const onSelectedChange = (groups: API.GroupManage.GroupInfo[], keys: React.Key[]) => {
+  const onSelectedChange = (groups: API.GroupManage.GroupInfo[]) => {
     setSelectedGroups(groups);
   };
 
@@ -106,7 +106,8 @@ const SelectGroupModal = (props: SelectGroupModalProps) => {
                         onChange={(e) => updateSelectedGroup(group.groupID, e.target.checked)}
                       />
                     )}
-                    <OIMAvatar src={group.faceURL} text={group.groupName} />
+                    {/* dawn 2026-06-15 修复默认群组选择弹窗群头像破图：已选群列表同样使用默认群图标兜底。 */}
+                    <OIMAvatar src={group.faceURL} text={group.groupName} isgroup />
                     <div>
                       <div className="text-sm">{group.groupName}</div>
                       <div className="text-xs text-gray-400">{group.groupID}</div>

@@ -35,18 +35,19 @@ const OIMAvatar: FC<IOIMAvatarProps> = (props) => {
     return isgroup ? default_group : undefined;
   }, [src, isgroup, isnotification]);
 
+  const resolvedAvatarUrl = useMemo(() => getResourceUrl(getAvatarUrl), [getAvatarUrl]);
+
   const avatarProps = { ...props, isgroup: undefined, isnotification: undefined };
 
   useEffect(() => {
-    if (!isgroup) {
-      setErrorHolder(undefined);
-    }
-  }, [isgroup]);
+    setErrorHolder(undefined);
+  }, [resolvedAvatarUrl]);
 
   const errorHandler = () => {
     if (isgroup) {
       setErrorHolder(default_group);
     }
+    return false;
   };
 
   return (
@@ -66,7 +67,13 @@ const OIMAvatar: FC<IOIMAvatarProps> = (props) => {
         },
         props.className,
       )}
-      src={errorHolder ?? <Image preview={preview} src={getResourceUrl(getAvatarUrl)} />}
+      // dawn 2026-06-15 修复群头像加载失败仍显示破图：内部 Image 失败时主动回退到默认群头像。
+      src={
+        errorHolder ??
+        (resolvedAvatarUrl ? (
+          <Image preview={preview} src={resolvedAvatarUrl} onError={errorHandler as any} />
+        ) : undefined)
+      }
       onError={errorHandler as any}
     >
       {text?.split('')[0]}

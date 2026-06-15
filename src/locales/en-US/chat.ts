@@ -127,6 +127,8 @@ export default {
   'group.remove.tips': 'Are you sure you want to remove this member?',
   'group.member.add': 'Add Group Members',
   'group.select': 'Select Groups',
+  // dawn 2026-06-15 Fix default group table header: add ProTable operation column locale text.
+  'pages.searchTable.titleOption': 'Operation',
 
   'group.mute.10minute': '10 Minutes',
   'group.mute.1hour': '1 Hour',
