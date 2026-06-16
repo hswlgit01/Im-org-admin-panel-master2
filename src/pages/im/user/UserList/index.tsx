@@ -1,4 +1,5 @@
 import OIMAvatar from '@/components/OIMAvatar';
+import { CheckCircleFilled } from '@ant-design/icons';
 // dawn 2026-04-27 删 updateUserAuth：UserList 的"非好友发送消息"开关已移除，
 // 这个 service 在本页不再被调用，留着会触发 ESLint no-unused-vars。
 import {
@@ -20,7 +21,7 @@ import type { ActionType, FormInstance, ProColumns } from '@ant-design/pro-compo
 import { ModalForm, PageContainer, ProFormCheckbox, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
 // dawn 2026-04-27 删 Switch：用户列表 can_send_free_msg 开关已移除，本页不再使用 Switch
-import { Button, Form, message, Popconfirm, Select, Space, Tag, Upload, Input, Modal } from 'antd';
+import { Button, Form, message, Popconfirm, Select, Space, Tag, Upload, Input, Modal, Tooltip } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import ForcedOfflineDrawer from './ForcedOfflineDrawer';
@@ -50,6 +51,9 @@ const ORG_USER_ROLE_LABELS: Record<string, string> = {
   SuperAdmin: '超级管理员',
   BackendAdmin: '后台管理员',
 };
+
+// dawn 2026-06-16 新增角色认证标识：后台用户列表中管理员/团队长昵称旁展示蓝色认证图标。
+const USER_ROLE_BADGE_ROLES = ['GroupManager', 'TermManager', 'SuperAdmin', 'BackendAdmin'];
 
 const UserList = () => {
   const intl = useIntl();
@@ -327,7 +331,22 @@ const UserList = () => {
         fixed: 'left',
         align: 'center',
         formItemProps: {
-          label: '用户信息'
+          label: '用户信息',
+        },
+        render: (_, record) => {
+          const role = String((record as { role?: string }).role ?? '').trim();
+          const nickname = record.nickname || (record as any).user?.nickname || '-';
+          const badgeTitle = ORG_USER_ROLE_LABELS[role] ?? '管理员/团队长';
+          return (
+            <Space size={4}>
+              <span>{nickname}</span>
+              {USER_ROLE_BADGE_ROLES.includes(role) && (
+                <Tooltip title={badgeTitle}>
+                  <CheckCircleFilled style={{ color: '#1890ff', fontSize: 14 }} />
+                </Tooltip>
+              )}
+            </Space>
+          );
         },
         renderFormItem: () => {
           return (
