@@ -354,6 +354,12 @@ export default [
             path: '/im/log/app_log',
             component: './im/log/AppLog',
           },
+          // dawn 2026-06-16 新增慢查询日志后台：在日志管理下挂载慢查询表格和导出页面。
+          {
+            name: 'SlowQueryLog',
+            path: '/im/log/slow_query_log',
+            component: './im/log/SlowQueryLog',
+          },
         ],
       },
       {

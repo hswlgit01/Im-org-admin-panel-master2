@@ -62,6 +62,8 @@ export default {
   'menu.IM.Log': '日志管理',
   'menu.IM.Log.LogList': '日志列表',
   'menu.IM.Log.AppLog': 'App日志',
+  // dawn 2026-06-16 新增慢查询日志后台：补充慢查询页面中文菜单名。
+  'menu.IM.Log.SlowQueryLog': '慢查询日志',
 
   // dawn 2026-05-05 修复后台聊天记录菜单：恢复用户消息和群组消息入口。
   'menu.IM.Message': '消息管理',
