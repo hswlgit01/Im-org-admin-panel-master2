@@ -97,40 +97,47 @@ const OrganizationDetail: React.FC = () => {
 }
   const fetchOrganizationInfo = async () => {
     setLoading(true);
-    const { data } = await organizationInfo();
-    setOrgData({
-      name: data.name,
-      createTime: new Date(data.created_at).toLocaleDateString(),
-      verified: data.status === 'pass',
-      type: data.type === 'enterprise' ? intl.formatMessage({ id: 'enterpriseOrg' }) : data.type,
-      totalUser: data.user_total || 0, // 成员总数
-      verifiedUserTotal: data.verified_user_total || 0, // 已实名成员总数
-      totalGroup: data.group_total || 0, // 群组数量
-      balance: 0,
-      contact: data.contacts,
-      phone: data.phone,
-      email: data.email,
-      inviteCode: data.invitation_code,
-      description: data.description,
-      faceURL: data.logo || '',
-      accountPrefix: data.account_prefix,
-    });
+    try {
+      // dawn 2026-06-17 修复组织详情加载态：接口异常时也要释放页面遮罩
+      const { data } = await organizationInfo();
+      setOrgData({
+        name: data.name,
+        createTime: new Date(data.created_at).toLocaleDateString(),
+        verified: data.status === 'pass',
+        type: data.type === 'enterprise' ? intl.formatMessage({ id: 'enterpriseOrg' }) : data.type,
+        totalUser: data.user_total || 0, // 成员总数
+        verifiedUserTotal: data.verified_user_total || 0, // 已实名成员总数
+        totalGroup: data.group_total || 0, // 群组数量
+        balance: 0,
+        contact: data.contacts,
+        phone: data.phone,
+        email: data.email,
+        inviteCode: data.invitation_code,
+        description: data.description,
+        faceURL: data.logo || '',
+        accountPrefix: data.account_prefix,
+      });
 
-    // 如果钱包存在，则获取钱包余额
-    if (data?.wallet_exist) {
-      try {
-        const balanceRes = await getWalletBalance();
-        if (balanceRes.data) {
-          setOrgData((prev) => ({
-            ...prev,
-            balance: balanceRes.data.total_balance_usd || 0,
-          }));
+      // 如果钱包存在，则获取钱包余额
+      if (data?.wallet_exist) {
+        try {
+          const balanceRes = await getWalletBalance();
+          if (balanceRes.data) {
+            setOrgData((prev) => ({
+              ...prev,
+              balance: balanceRes.data.total_balance_usd || 0,
+            }));
+          }
+        } catch (error) {
+          console.error('获取钱包余额失败:', error);
         }
-      } catch (error) {
-        console.error('获取钱包余额失败:', error);
       }
+    } catch (error) {
+      console.error('获取组织信息失败:', error);
+      message.error('获取组织信息失败');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
   useEffect(() => {
     fetchOrganizationInfo();
@@ -181,19 +188,25 @@ const OrganizationDetail: React.FC = () => {
 
 
   const selectUserList = async (type: TListType) => {
-    const res = await selectMemberList(type === 'member' ? memberTableParams : groupTableParams);
-    console.log('selectUserList', res);
-    const list = res.data.data;
-    if (type === 'member') {
-      setMemberList({
-        total: res.data.total,
-        list,
-      });
-    } else {
-      setGroupManagerList({
-        total: res.data.total,
-        list,
-      });
+    try {
+      // dawn 2026-06-17 修复组织详情加载态：成员列表异常时不影响页面主体展示
+      const res = await selectMemberList(type === 'member' ? memberTableParams : groupTableParams);
+      console.log('selectUserList', res);
+      const list = res.data.data;
+      if (type === 'member') {
+        setMemberList({
+          total: res.data.total,
+          list,
+        });
+      } else {
+        setGroupManagerList({
+          total: res.data.total,
+          list,
+        });
+      }
+    } catch (error) {
+      console.error('获取组织成员列表失败:', error);
+      message.error(type === 'member' ? '获取后台管理员失败' : '获取团队长列表失败');
     }
   }
   const openSelectUserModal = () => {
