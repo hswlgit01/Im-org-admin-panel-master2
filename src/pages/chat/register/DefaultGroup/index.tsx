@@ -165,7 +165,8 @@ const DefaultGroup = () => {
         },
       },
       {
-        title: intl.formatMessage({ id: 'pages.searchTable.titleOption' }),
+        // dawn 2026-06-21 修复默认群操作列文案：避免国际化未加载时展示原始 key。
+        title: '操作',
         valueType: 'option',
         key: 'option',
         align: 'center',
