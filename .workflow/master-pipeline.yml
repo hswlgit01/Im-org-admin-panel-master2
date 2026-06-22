@@ -11,28 +11,28 @@ triggers:
 
 stages:
   - stage:
-      name: build_and_deploy
-      displayName: 构建并部署
-      steps:
-        - step: shell@agent
-          name: deploy_admin
-          displayName: Docker 构建部署后台
-          hostGroupID: freechat-prod
-          script: |
-            set -euo pipefail
+    name: build_and_deploy
+    displayName: 构建并部署
+    steps:
+      - step: shell@agent
+        name: deploy_admin
+        displayName: Docker 构建部署后台
+        hostGroupID: freechat-prod
+        script: |
+          set -euo pipefail
 
-            IMAGE_NAME=freechat-admin
-            CONTAINER_NAME=freechat-admin
+          IMAGE_NAME=freechat-admin
+          CONTAINER_NAME=freechat-admin
 
-            docker build -t "${IMAGE_NAME}:latest" .
+          docker build -t "${IMAGE_NAME}:latest" .
 
-            docker stop "${CONTAINER_NAME}" 2>/dev/null || true
-            docker rm "${CONTAINER_NAME}" 2>/dev/null || true
+          docker stop "${CONTAINER_NAME}" 2>/dev/null || true
+          docker rm "${CONTAINER_NAME}" 2>/dev/null || true
 
-            docker run -d \
-              --name "${CONTAINER_NAME}" \
-              --restart unless-stopped \
-              --network host \
-              "${IMAGE_NAME}:latest"
+          docker run -d \
+            --name "${CONTAINER_NAME}" \
+            --restart unless-stopped \
+            --network host \
+            "${IMAGE_NAME}:latest"
 
-            docker ps --filter "name=${CONTAINER_NAME}"
+          docker ps --filter "name=${CONTAINER_NAME}"
