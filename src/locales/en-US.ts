@@ -16,7 +16,7 @@ export default {
   'layout.user.link.privacy': 'Privacy',
   'layout.user.link.terms': 'Terms',
 
-  'app.copyright.produced': 'FreeChat-Admin',
+  'app.copyright.produced': '心享-Admin',
   ...globalHeader,
   ...menu,
   ...settingDrawer,

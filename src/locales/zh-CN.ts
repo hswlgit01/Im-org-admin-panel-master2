@@ -16,7 +16,7 @@ export default {
   'layout.user.link.privacy': '隐私',
   'layout.user.link.terms': '条款',
 
-  'app.copyright.produced': 'FreeChat后台管理系统',
+  'app.copyright.produced': '心享后台管理系统',
   ...pages,
   ...globalHeader,
   ...menu,

@@ -4,7 +4,7 @@ export default {
 
   'pages.login': '登录',
   'pages.login.and': '和',
-  'pages.login.welcome': '欢迎使用FreeChat',
+  'pages.login.welcome': '欢迎使用心享',
   'pages.login.account': '账号',
   'pages.login.account.required': '请输入账户!',
   'pages.login.password': '密码',

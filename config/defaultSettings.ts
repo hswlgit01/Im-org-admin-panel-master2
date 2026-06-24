@@ -15,7 +15,7 @@ const Settings: ProLayoutProps & {
   fixedHeader: false,
   fixSiderbar: true,
   colorWeak: false,
-  title: 'FreeChat-Admin',
+  title: '心享-Admin',
   pwa: true,
   logo: false,
   iconfontUrl: '',
