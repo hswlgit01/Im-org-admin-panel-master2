@@ -15,6 +15,7 @@ import {
   getIdentityVerificationDetail,
   cancelIdentityVerification,
   updateOrgUserNickname,
+  resetUserPassword,
 } from '@/services/user';
 import { formatUTCTimeToBeijing, getResourceUrl } from '@/utils/common';
 import type { ActionType, FormInstance, ProColumns } from '@ant-design/pro-components';
@@ -587,7 +588,7 @@ const UserList = () => {
         title: '操作',
         key: 'action',
         hideInSearch: true,
-        width: 220,
+        width: 320,
         align: 'center',
         fixed: 'right',
         render: (_: any, record: any) => (
@@ -600,6 +601,19 @@ const UserList = () => {
             <Button type="link" onClick={() => openNicknameModal(record)}>
               修改昵称
             </Button>
+            {/* dawn 2026-06-24 组织用户列表新增"重置密码"操作：重置为默认密码 123456 */}
+            <Popconfirm
+              title="确定将登录密码重置为默认 123456?"
+              onConfirm={async () => {
+                await resetUserPassword({ userID: record.user_id });
+                message.success('密码已重置为默认 123456');
+                actionRef.current?.reload();
+              }}
+              okText="确定"
+              cancelText="取消"
+            >
+              <Button type="link">重置密码</Button>
+            </Popconfirm>
             <Popconfirm
               title="确定要封禁此用户吗?"
               onConfirm={async () => {

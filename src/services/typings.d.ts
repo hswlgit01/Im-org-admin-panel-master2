@@ -207,7 +207,8 @@ declare namespace API {
 
     type ResetUserPasswordParams = {
       userID: string;
-      newPassword: string;
+      // 可选：为空时后端回退默认密码 123456
+      newPassword?: string;
     };
 
     type UpdateBlockParams = {
