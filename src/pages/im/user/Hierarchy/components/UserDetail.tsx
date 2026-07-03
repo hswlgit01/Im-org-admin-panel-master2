@@ -1,9 +1,21 @@
-import { Descriptions, Avatar, Tag, Typography, Tooltip } from 'antd';
+import { Descriptions, Avatar, Tag, Typography, Tooltip, Button, Popconfirm, message } from 'antd';
 import { TeamOutlined } from '@ant-design/icons';
 import { formatDate } from '@/utils/date';
-import { useIntl } from '@umijs/max';
+import { useIntl, request } from '@umijs/max';
+import { CHAT_URL } from '@/config';
+import { v4 as uuidv4 } from 'uuid';
 
 const { Text } = Typography;
+
+// dawn 2026-07-03 异地登录限制：后台清除组织用户的登录城市绑定，清除后其下次登录以新城市重新绑定。
+async function clearLoginCity(userId: string) {
+  return request<any>('/third_admin/organization_user/clear_login_city', {
+    method: 'POST',
+    data: { user_id: userId },
+    headers: { isAccount: true, operationID: uuidv4() },
+    baseURL: CHAT_URL,
+  });
+}
 
 interface UserDetailProps {
   user: API.Hierarchy.UserHierarchyInfo;
@@ -31,6 +43,15 @@ const UserDetail: React.FC<UserDetailProps> = ({ user }) => {
     return <Tag color={color}>Lv{level}</Tag>;
   };
 
+  const handleClearLoginCity = async () => {
+    try {
+      await clearLoginCity(user.user_id as string);
+      message.success('已清除登录城市，该用户下次登录将以新城市重新绑定');
+    } catch (e: any) {
+      message.error(e?.message || '清除失败');
+    }
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
@@ -49,6 +70,20 @@ const UserDetail: React.FC<UserDetailProps> = ({ user }) => {
             <Text type="secondary">{user.nickname}</Text>
           )}
         </div>
+        {/* dawn 2026-07-03 异地登录限制：清除该用户登录城市绑定 */}
+        {!isOrgNode && user.user_id && (
+          <Popconfirm
+            title="清除登录城市绑定？"
+            description="清除后该用户下次登录将以新城市重新绑定（用于本人异地换地方登录）。"
+            okText="确认清除"
+            cancelText="取消"
+            onConfirm={handleClearLoginCity}
+          >
+            <Button danger size="small" style={{ marginLeft: 'auto' }}>
+              清除登录城市
+            </Button>
+          </Popconfirm>
+        )}
       </div>
 
       <Descriptions
