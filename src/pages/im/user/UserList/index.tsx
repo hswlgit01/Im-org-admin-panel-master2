@@ -6,6 +6,7 @@ import {
   downloadTemplate,
   postOrgUserWalletSnapshot,
   selectMemberList,
+  getOrgUserOperationTimes,
   updateUserRole,
   uploadTemplate,
 } from '@/services/account';
@@ -441,6 +442,19 @@ const UserList = () => {
         width: 220,
         align: 'center',
         sorter: true,
+      },
+      {
+        // dawn 2026-07-04 最近操作时间：客户端打开APP上报的时间
+        title: '最近操作时间',
+        key: 'last_operation_time',
+        dataIndex: 'last_operation_time',
+        hideInSearch: true,
+        width: 170,
+        align: 'center',
+        render: (_, record) => {
+          const t = (record as any).last_operation_time as number | undefined;
+          return t && t > 0 ? dayjs(t).format('YYYY-MM-DD HH:mm:ss') : '-';
+        },
       },
       {
         title: '平台',
@@ -1040,6 +1054,18 @@ const UserList = () => {
               });
             } catch (e) {
               console.error('wallet_snapshot', e);
+            }
+            // dawn 2026-07-04 最近操作时间：批量取并合并进行(user_id→毫秒)。
+            try {
+              const opRes = await getOrgUserOperationTimes({ user_ids: userIds });
+              const omap = ((opRes as any)?.data ?? (opRes as any) ?? {}) as Record<string, number>;
+              res = res.map((row: { user_id?: string }) =>
+                row.user_id && omap[row.user_id]
+                  ? { ...row, last_operation_time: omap[row.user_id] }
+                  : row,
+              );
+            } catch (e) {
+              console.error('operation_times', e);
             }
           }
           return {

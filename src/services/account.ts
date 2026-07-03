@@ -86,6 +86,19 @@ export async function selectMemberList(data: any) {
   });
 }
 
+// dawn 2026-07-04 最近操作时间：批量查询用户最近操作时间(user_id→毫秒)。
+export async function getOrgUserOperationTimes(data: { user_ids: string[] }) {
+  return request<any>('/third_admin/organization_user/operation_times', {
+    method: 'post',
+    data,
+    headers: {
+      operationID: uuidv4(),
+      isAccount: true,
+    },
+    baseURL: CHAT_URL,
+  });
+}
+
 /** 列表 omit_wallet 后，按页合并钱包/补偿金（仅本组织 user_id） */
 export async function postOrgUserWalletSnapshot(body: { user_ids: string[] }) {
   return request<{ list: API.UserManage.WalletSnapshotItem[] }>(
