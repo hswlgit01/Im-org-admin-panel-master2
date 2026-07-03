@@ -128,10 +128,15 @@ export async function registerUser(params: API.UserManage.RegisterUserParams) {
 }
 
 export async function resetUserPassword(params: API.UserManage.ResetUserPasswordParams) {
+  // dawn 2026-07-03 修复重置密码报"无效的参数"：兼容后端不同字段命名(userID / user_id)，两个都带上，
+  // 避免因字段名不匹配导致 bind 失败。后端 NormalizedUserID 会择一取用。
+  const uid = (params as any).userID ?? (params as any).user_id;
   return request('/third_admin/organization_user/reset_password', {
     method: 'POST',
     data: {
       ...params,
+      userID: uid,
+      user_id: uid,
     },
     headers: {
       isAccount: true,
