@@ -295,3 +295,31 @@ export async function cancelIdentityVerification(params: { userID: string }) {
     baseURL: CHAT_URL,
   });
 }
+
+/** 后台手动调节用户可用余额的入参 */
+export interface AdjustUserBalanceParams {
+  /** 被调整用户的 organization_user.user_id */
+  targetUserId: string;
+  /** 币种 ID */
+  currencyId: string;
+  /** 调整金额，字符串传递避免浮点精度丢失。正数增加，负数扣减 */
+  amount: string;
+  /** 调整原因，必填，会写入用户账单备注 */
+  reason: string;
+  /**
+   * 幂等键。每次打开调整弹窗生成一个，提交失败重试时**沿用同一个**，
+   * 避免网络重试导致重复加钱。
+   */
+  requestId: string;
+}
+
+/** 后台手动调节用户可用余额（仅 SuperAdmin / BackendAdmin 有权限） */
+export async function adjustUserBalance(params: AdjustUserBalanceParams) {
+  return request<{ data: { balance: string } }>(
+    '/third_admin/organization/wallet/adjust_user_balance',
+    {
+      method: 'POST',
+      data: params,
+    },
+  );
+}
