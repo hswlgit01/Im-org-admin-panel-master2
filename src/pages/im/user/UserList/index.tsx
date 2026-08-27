@@ -17,13 +17,16 @@ import {
   cancelIdentityVerification,
   updateOrgUserNickname,
   resetUserPassword,
+  previewMigrateMember,
+  migrateMember,
+  type MigratePreview,
 } from '@/services/user';
 import { formatUTCTimeToBeijing, getResourceUrl } from '@/utils/common';
 import type { ActionType, FormInstance, ProColumns } from '@ant-design/pro-components';
 import { ModalForm, PageContainer, ProFormCheckbox, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
 // dawn 2026-04-27 删 Switch：用户列表 can_send_free_msg 开关已移除，本页不再使用 Switch
-import { Button, Form, message, Popconfirm, Select, Space, Tag, Upload, Input, Modal, Tooltip } from 'antd';
+import { Alert, Button, Form, message, Popconfirm, Select, Space, Tag, Upload, Input, Modal, Tooltip } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import ForcedOfflineDrawer from './ForcedOfflineDrawer';
@@ -188,6 +191,65 @@ const UserList = () => {
       message.error('取消实名认证失败');
     }
   };
+
+  // ---- 会员整体迁移 ----
+  const [migrateForm] = Form.useForm();
+  const [migrateModal, setMigrateModal] = useState<{
+    open: boolean;
+    record?: any;
+    // 预览结果。必须先预览、看清影响面才允许执行 —— 这个操作会一次性改动
+    // 几十上百条记录且难以人工还原。
+    preview?: MigratePreview;
+  }>({ open: false });
+  const [migrateLoading, setMigrateLoading] = useState(false);
+
+  const openMigrateModal = useCallback(
+    (record: any) => {
+      migrateForm.resetFields();
+      setMigrateModal({ open: true, record, preview: undefined });
+    },
+    [migrateForm],
+  );
+
+  // 第一步：预览
+  const doPreviewMigrate = useCallback(async () => {
+    const values = await migrateForm.validateFields(['newParentUserId']);
+    if (!migrateModal.record) return;
+    setMigrateLoading(true);
+    try {
+      const res: any = await previewMigrateMember({
+        memberUserId: migrateModal.record.user_id,
+        newParentUserId: String(values.newParentUserId).trim(),
+      });
+      setMigrateModal((prev) => ({ ...prev, preview: res?.data ?? res }));
+    } catch (e: any) {
+      message.error(e?.message || '预览失败');
+    } finally {
+      setMigrateLoading(false);
+    }
+  }, [migrateForm, migrateModal.record]);
+
+  // 第二步：执行
+  const doExecuteMigrate = useCallback(async () => {
+    const values = await migrateForm.validateFields();
+    if (!migrateModal.record || !migrateModal.preview) return;
+    setMigrateLoading(true);
+    try {
+      await migrateMember({
+        memberUserId: migrateModal.record.user_id,
+        newParentUserId: String(values.newParentUserId).trim(),
+        reason: String(values.reason).trim(),
+      });
+      message.success('迁移完成');
+      setMigrateModal({ open: false });
+      migrateForm.resetFields();
+      actionRef.current?.reload();
+    } catch (e: any) {
+      message.error(e?.message || '迁移失败');
+    } finally {
+      setMigrateLoading(false);
+    }
+  }, [migrateForm, migrateModal]);
 
   const openNicknameModal = useCallback((record: any) => {
     setNicknameModal({
@@ -615,6 +677,9 @@ const UserList = () => {
             <Button type="link" onClick={() => openNicknameModal(record)}>
               修改昵称
             </Button>
+            <Button type="link" onClick={() => openMigrateModal(record)}>
+              迁移团队
+            </Button>
             {/* dawn 2026-06-24 组织用户列表新增"重置密码"操作：重置为默认密码 123456 */}
             <Popconfirm
               title="确定将登录密码重置为默认 123456?"
@@ -795,6 +860,104 @@ const UserList = () => {
         reload={() => actionRef.current?.reload()}
         setDrawerOptions={setDrawerOptions}
       />
+      <Modal
+        title="迁移团队"
+        open={migrateModal.open}
+        width={560}
+        confirmLoading={migrateLoading}
+        onCancel={() => {
+          setMigrateModal({ open: false });
+          migrateForm.resetFields();
+        }}
+        destroyOnClose
+        // 两步式：未预览时主按钮是「预览影响」，预览完才变成「确认迁移」。
+        // 强制先看影响面，避免盲目执行一个难以还原的批量操作。
+        okText={migrateModal.preview ? '确认迁移' : '预览影响'}
+        onOk={migrateModal.preview ? doExecuteMigrate : doPreviewMigrate}
+      >
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="该会员及其整个下级团队都会一起迁移"
+          description="迁移会改动整棵团队的层级关系，并调整新旧上级的团队人数。操作会记录在案，但难以人工还原，请先预览确认。"
+        />
+        <div style={{ marginBottom: 12 }}>
+          <span style={{ color: '#888' }}>被迁移会员：</span>
+          <strong>
+            {migrateModal.record?.user?.nickname || migrateModal.record?.user_id}
+          </strong>
+          <span style={{ color: '#888', marginLeft: 8 }}>
+            （当前团队 {migrateModal.record?.team_size ?? '-'} 人）
+          </span>
+        </div>
+        <Form form={migrateForm} layout="vertical">
+          <Form.Item
+            label="迁移到谁名下"
+            name="newParentUserId"
+            extra="填写目标上级的用户ID。不能填该会员自己的下级，否则层级会成环，系统会拒绝"
+            rules={[{ required: true, message: '请输入目标上级的用户ID' }]}
+          >
+            <Input
+              allowClear
+              placeholder="目标上级的 user_id"
+              // 改了目标就作废上一次预览，避免「看的是 A 的影响面、执行的却是 B」
+              onChange={() =>
+                setMigrateModal((prev) =>
+                  prev.preview ? { ...prev, preview: undefined } : prev,
+                )
+              }
+            />
+          </Form.Item>
+
+          {migrateModal.preview && (
+            <div
+              style={{
+                background: '#fafafa',
+                border: '1px solid #f0f0f0',
+                padding: 12,
+                marginBottom: 16,
+                borderRadius: 4,
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>迁移影响预览</div>
+              <div>
+                将移动 <strong>{migrateModal.preview.subtreeSize}</strong> 人（含本人）
+              </div>
+              <div>
+                层级：{migrateModal.preview.oldLevel} → {migrateModal.preview.newLevel}
+                {migrateModal.preview.levelDelta !== 0 && (
+                  <span style={{ color: '#d46b08', marginLeft: 6 }}>
+                    整棵团队{migrateModal.preview.levelDelta > 0 ? '下沉' : '上浮'}
+                    {Math.abs(migrateModal.preview.levelDelta)} 层
+                  </span>
+                )}
+              </div>
+              <div>
+                团队人数减少的上级：{migrateModal.preview.teamSizeDecrease?.length || 0} 人
+                　增加的上级：{migrateModal.preview.teamSizeIncrease?.length || 0} 人
+              </div>
+              {migrateModal.preview.warnings?.map((w, i) => (
+                <div key={i} style={{ color: '#d4380d', marginTop: 6 }}>
+                  ⚠ {w}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Form.Item
+            label="迁移原因"
+            name="reason"
+            extra="会记入迁移记录，用于日后追溯团队归属变化"
+            rules={[
+              { required: true, message: '请填写迁移原因' },
+              { max: 100, message: '原因不超过 100 字' },
+            ]}
+          >
+            <Input.TextArea rows={2} placeholder="如：业务员离职交接 / 团队重组" />
+          </Form.Item>
+        </Form>
+      </Modal>
       <Modal
         title="修改昵称"
         open={nicknameModal.open}

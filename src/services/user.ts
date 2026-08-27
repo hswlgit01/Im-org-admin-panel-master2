@@ -295,3 +295,48 @@ export async function cancelIdentityVerification(params: { userID: string }) {
     baseURL: CHAT_URL,
   });
 }
+
+/** 会员迁移预览返回：本次迁移将造成的影响 */
+export interface MigratePreview {
+  memberUserId: string;
+  newParentUserId: string;
+  /** 迁移前的直接上级 */
+  oldParentUserId: string;
+  /** 会被移动的总人数（含被迁移者本人） */
+  subtreeSize: number;
+  oldLevel: number;
+  newLevel: number;
+  /** 整棵团队的层级位移，正数下沉、负数上浮 */
+  levelDelta: number;
+  /** 这些上级的团队人数将减少 subtreeSize */
+  teamSizeDecrease: string[];
+  /** 这些上级的团队人数将增加 subtreeSize */
+  teamSizeIncrease: string[];
+  /** 需要操作者注意但不阻断的提示 */
+  warnings: string[];
+}
+
+export interface MigrateMemberParams {
+  /** 被迁移的会员，其整棵下级团队会一起搬走 */
+  memberUserId: string;
+  /** 迁移到谁名下 */
+  newParentUserId: string;
+  /** 迁移原因，执行时必填 */
+  reason?: string;
+}
+
+/** 会员迁移预览（只读，不改任何数据） */
+export async function previewMigrateMember(params: MigrateMemberParams) {
+  return request<{ data: MigratePreview }>(
+    '/third_admin/organization_user/migrate_member_preview',
+    { method: 'POST', data: params },
+  );
+}
+
+/** 执行会员整体迁移 */
+export async function migrateMember(params: MigrateMemberParams) {
+  return request<{ data: MigratePreview }>(
+    '/third_admin/organization_user/migrate_member',
+    { method: 'POST', data: params },
+  );
+}
