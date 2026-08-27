@@ -19,6 +19,8 @@ export async function saveWithdrawalRule(data: {
   isEnabled: boolean;
   minAmount: number;
   maxAmount: number;
+  /** 提现金额步长：提现额必须是该值的整数倍，0 表示不限制 */
+  amountStep?: number;
   feeFixed: number;
   feeRate: number;
   needRealName: boolean;

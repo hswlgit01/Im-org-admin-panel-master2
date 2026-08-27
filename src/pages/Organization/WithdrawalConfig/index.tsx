@@ -7,6 +7,7 @@ interface WithdrawalRuleConfig {
   isEnabled: boolean;
   minAmount: number;
   maxAmount: number;
+  amountStep: number;
   feeFixed: number;
   feeRate: number;
   needRealName: boolean;
@@ -28,6 +29,7 @@ const WithdrawalConfig = () => {
         isEnabled: data.isEnabled ?? false,
         minAmount: data.minAmount ?? 5.0,
         maxAmount: data.maxAmount ?? 50000.0,
+        amountStep: data.amountStep ?? 0,
         feeFixed: data.feeFixed ?? 5.0,
         feeRate: data.feeRate ?? 1.0,
         needRealName: data.needRealName ?? true,
@@ -53,6 +55,21 @@ const WithdrawalConfig = () => {
       if (values.maxAmount <= values.minAmount) {
         message.error('最大提现金额必须大于最小提现金额');
         return;
+      }
+
+      // 步长与起提金额必须自洽：若起提金额本身不是步长的整数倍，
+      // 用户将永远无法提出最小金额（例如起提 150、步长 100，
+      // 150 不合步长、200 才合法，起提额形同虚设）。
+      const step = values.amountStep ?? 0;
+      if (step > 0) {
+        const minCents = Math.round(values.minAmount * 100);
+        const stepCents = Math.round(step * 100);
+        if (minCents % stepCents !== 0) {
+          message.error(
+            `最小提现金额（${values.minAmount}）必须是金额步长（${step}）的整数倍，否则用户无法提出最小金额`,
+          );
+          return;
+        }
       }
 
       setSaveLoading(true);
@@ -101,6 +118,7 @@ const WithdrawalConfig = () => {
             isEnabled: false,
             minAmount: 5.0,
             maxAmount: 50000.0,
+            amountStep: 0,
             feeFixed: 5.0,
             feeRate: 1.0,
             needRealName: true,
@@ -154,6 +172,21 @@ const WithdrawalConfig = () => {
               precision={2}
               addonBefore="¥"
               placeholder="请输入最大提现金额"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="金额步长"
+            name="amountStep"
+            rules={[{ type: 'number', min: 0, message: '步长不能小于0' }]}
+            extra="提现金额必须是该值的整数倍。填 0 表示不限制；填 100 即「只能整百提」。需与最小提现金额自洽（如起提 200 + 步长 100）"
+          >
+            <InputNumber
+              style={{ width: 300 }}
+              min={0}
+              precision={2}
+              addonBefore="¥"
+              placeholder="0 表示不限制"
             />
           </Form.Item>
 
