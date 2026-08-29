@@ -17,13 +17,14 @@ import {
   cancelIdentityVerification,
   updateOrgUserNickname,
   resetUserPassword,
+  adjustUserBalance,
 } from '@/services/user';
 import { formatUTCTimeToBeijing, getResourceUrl } from '@/utils/common';
 import type { ActionType, FormInstance, ProColumns } from '@ant-design/pro-components';
 import { ModalForm, PageContainer, ProFormCheckbox, ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
 // dawn 2026-04-27 删 Switch：用户列表 can_send_free_msg 开关已移除，本页不再使用 Switch
-import { Button, Form, message, Popconfirm, Select, Space, Tag, Upload, Input, Modal, Tooltip } from 'antd';
+import { Alert, Button, Form, message, Popconfirm, Select, Space, Tag, Upload, Input, Modal, Tooltip } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import ForcedOfflineDrawer from './ForcedOfflineDrawer';
@@ -188,6 +189,73 @@ const UserList = () => {
       message.error('取消实名认证失败');
     }
   };
+
+  // ---- 后台手动调节余额 ----
+  const [adjustForm] = Form.useForm();
+  const [adjustModal, setAdjustModal] = useState<{
+    open: boolean;
+    record?: any;
+    balances?: any[];
+    // 幂等键：每次打开弹窗生成一个，提交失败重试时沿用同一个。
+    // 这是防重复加钱的关键 —— 若每次点提交都换新 key，网络超时重试就会重复入账。
+    requestId?: string;
+  }>({ open: false });
+  const [adjustLoading, setAdjustLoading] = useState(false);
+
+  const openAdjustModal = useCallback(
+    (record: any) => {
+      const balances =
+        (record.wallet_balances?.length ? record.wallet_balances : null) ??
+        (record.wallet?.balances?.length ? record.wallet.balances : null) ??
+        (record.balances?.length ? record.balances : null) ??
+        [];
+      if (!balances.length) {
+        message.warning('该用户暂无钱包余额数据，无法调节');
+        return;
+      }
+      adjustForm.resetFields();
+      adjustForm.setFieldsValue({
+        currencyId: balances[0].currency_id ?? balances[0].currencyId,
+      });
+      setAdjustModal({
+        open: true,
+        record,
+        balances,
+        requestId:
+          typeof crypto !== 'undefined' && (crypto as any).randomUUID
+            ? (crypto as any).randomUUID()
+            : `adj-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      });
+    },
+    [adjustForm],
+  );
+
+  const submitAdjustBalance = useCallback(async () => {
+    const values = await adjustForm.validateFields();
+    if (!adjustModal.record || !adjustModal.requestId) return;
+
+    setAdjustLoading(true);
+    try {
+      await adjustUserBalance({
+        targetUserId: adjustModal.record.user_id,
+        currencyId: values.currencyId,
+        // 金额以字符串传递，避免 JSON 序列化把 100.10 变成 100.09999999999999
+        amount: String(values.amount).trim(),
+        reason: values.reason.trim(),
+        requestId: adjustModal.requestId,
+      });
+      message.success('调整成功');
+      setAdjustModal({ open: false });
+      adjustForm.resetFields();
+      actionRef.current?.reload();
+    } catch (e: any) {
+      // 刻意不重置 requestId：用户重试时沿用同一个幂等键，
+      // 即使上一次其实已在服务端成功（只是响应超时），也不会重复入账。
+      message.error(e?.message || '调整失败');
+    } finally {
+      setAdjustLoading(false);
+    }
+  }, [adjustForm, adjustModal]);
 
   const openNicknameModal = useCallback((record: any) => {
     setNicknameModal({
@@ -615,6 +683,9 @@ const UserList = () => {
             <Button type="link" onClick={() => openNicknameModal(record)}>
               修改昵称
             </Button>
+            <Button type="link" onClick={() => openAdjustModal(record)}>
+              调节余额
+            </Button>
             {/* dawn 2026-06-24 组织用户列表新增"重置密码"操作：重置为默认密码 123456 */}
             <Popconfirm
               title="确定将登录密码重置为默认 123456?"
@@ -795,6 +866,113 @@ const UserList = () => {
         reload={() => actionRef.current?.reload()}
         setDrawerOptions={setDrawerOptions}
       />
+      <Modal
+        title="调节余额"
+        open={adjustModal.open}
+        onOk={submitAdjustBalance}
+        confirmLoading={adjustLoading}
+        onCancel={() => {
+          setAdjustModal({ open: false });
+          adjustForm.resetFields();
+        }}
+        okText="确认调整"
+        destroyOnClose
+        width={520}
+      >
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="此操作会直接改动用户余额"
+          description="调整会计入用户账单（显示为「后台调整」及填写的原因），并记录后台操作日志。请确认金额无误后再提交。"
+        />
+        <div style={{ marginBottom: 12 }}>
+          <span style={{ color: '#888' }}>用户：</span>
+          <strong>{adjustModal.record?.user?.nickname || adjustModal.record?.user_id}</strong>
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <span style={{ color: '#888' }}>当前余额：</span>
+          {(adjustModal.balances ?? []).map((b: any, i: number) => (
+            <Tag color="blue" key={i}>
+              {b.currency_name || b.currencyName || b.currency_id || b.currencyId}:{' '}
+              {parseFloat(b.available_balance || b.availableBalance || b.balance || 0).toFixed(2)}
+            </Tag>
+          ))}
+        </div>
+        <Form form={adjustForm} layout="vertical">
+          <Form.Item
+            label="币种"
+            name="currencyId"
+            rules={[{ required: true, message: '请选择币种' }]}
+          >
+            <Select
+              options={(adjustModal.balances ?? []).map((b: any) => ({
+                value: b.currency_id ?? b.currencyId,
+                label:
+                  (b.currency_name || b.currencyName || b.currency_id || b.currencyId) +
+                  `（当前 ${parseFloat(
+                    b.available_balance || b.availableBalance || b.balance || 0,
+                  ).toFixed(2)}）`,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item
+            label="调整金额"
+            name="amount"
+            extra="正数为增加，负数为扣减。例：100 表示加 100，-50 表示扣 50"
+            rules={[
+              { required: true, message: '请输入调整金额' },
+              {
+                validator: (_, value) => {
+                  const v = String(value ?? '').trim();
+                  if (!v) return Promise.resolve();
+                  if (!/^-?\d+(\.\d{1,2})?$/.test(v)) {
+                    return Promise.reject(new Error('金额格式不正确，最多两位小数'));
+                  }
+                  if (Number(v) === 0) {
+                    return Promise.reject(new Error('调整金额不能为 0'));
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+          >
+            {/* 用 Input 而非 InputNumber：金额需以字符串原样传给后端，
+                走 number 类型会经过 JS 浮点，100.10 可能变成 100.09999999999999 */}
+            <Input placeholder="如 100 或 -50" allowClear />
+          </Form.Item>
+          <Form.Item
+            label="再次输入金额确认"
+            name="amountConfirm"
+            dependencies={['amount']}
+            extra="防止手滑多打一个 0，两次输入需完全一致"
+            rules={[
+              { required: true, message: '请再次输入金额' },
+              ({ getFieldValue }) => ({
+                validator: (_, value) => {
+                  if (String(value ?? '').trim() === String(getFieldValue('amount') ?? '').trim()) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error('两次输入的金额不一致'));
+                },
+              }),
+            ]}
+          >
+            <Input placeholder="再次输入相同金额" allowClear />
+          </Form.Item>
+          <Form.Item
+            label="调整原因"
+            name="reason"
+            extra="用户会在账单中看到该原因，请如实填写"
+            rules={[
+              { required: true, message: '请填写调整原因' },
+              { max: 100, message: '原因不超过 100 字' },
+            ]}
+          >
+            <Input.TextArea rows={2} placeholder="如：活动补发 / 误扣返还 / 客诉赔付" />
+          </Form.Item>
+        </Form>
+      </Modal>
       <Modal
         title="修改昵称"
         open={nicknameModal.open}
